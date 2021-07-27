@@ -14,7 +14,6 @@ protected:
     bool _expectFailure = false;
     bool _expectTimeout = false;
     uint64_t _timeout = -1lu;
-
     bool _ignoreMemoryLeak = false;
 
     // test functions
