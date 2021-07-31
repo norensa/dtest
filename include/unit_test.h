@@ -2,9 +2,9 @@
 
 #include <test.h>
 
-#include <functional>
 #include <chrono>
 
+namespace dtest {
 
 class UnitTest : public Test {
 
@@ -35,7 +35,7 @@ protected:
 
     uint64_t _timedRun(const std::function<void()> &func);
 
-    Status run() override;
+    void _driverRun() override;
 
 public:
 
@@ -56,12 +56,12 @@ public:
 
     ~UnitTest() = default;
 
-    inline Test & dependsOn(const std::string &dependency) {
+    inline UnitTest & dependsOn(const std::string &dependency) {
         Test::dependsOn(dependency);
         return *this;
     }
 
-    inline Test & dependsOn(const std::initializer_list<std::string> &dependencies) {
+    inline UnitTest & dependsOn(const std::initializer_list<std::string> &dependencies) {
         Test::dependsOn(dependencies);
         return *this;
     }
@@ -113,3 +113,5 @@ public:
         return *this;
     }
 };
+
+}  // end namespace dtest

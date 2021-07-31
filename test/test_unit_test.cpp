@@ -1,17 +1,17 @@
 #include <dtest.h>
 
-unit(unittest, pass)
+unit("unit-test", "pass")
 .body([] {
     assert(true);
 });
 
-unit(unittest, fail)
+unit("unit-test", "fail")
 .body([] {
     assert(false);
 })
 .expectFailure();
 
-unit(unittest, timeout)
+unit("unit-test", "timeout")
 .body([] {
     assert(true);
 })

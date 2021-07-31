@@ -3,6 +3,8 @@
 #include <unordered_map>
 #include <mutex>
 
+namespace dtest {
+
 class MemoryWatch {
 private:
 
@@ -79,3 +81,5 @@ public:
         return _trackAllocations;
     }
 };
+
+}  // end namespace dtest

@@ -2,6 +2,8 @@
 
 #include <fstream>
 
+using namespace dtest;
+
 int main(int argc, char *argv[]) {
     Test::logStatsToStderr(true);
 

@@ -10,6 +10,8 @@
 #include <locale>
 #include <sstream>
 
+using namespace dtest;
+
 static thread_local bool __mem_track_locked = false;
 
 void MemoryWatch::_init() {
