@@ -1,0 +1,57 @@
+BUILD_DIR = build/$(shell uname -s)-$(shell uname -m)
+
+INCLUDES = -I../include
+
+LIB_DIRS =
+LIBS = 
+
+CXX = g++
+CPPFLAGS = -Werror -Wall -Winline -Wpedantic
+CXXFLAGS = -std=c++11 -march=native -fPIC
+
+LDFLAGS = -Wl,-E -Wl,-export-dynamic
+DEPFLAGS = -MM
+
+SOURCES = $(wildcard *.cpp)
+OBJ_FILES = $(SOURCES:%.cpp=$(BUILD_DIR)/%.so)
+
+.PHONY : all clean clean-dep
+
+all : $(OBJ_FILES)
+
+ifndef nodep
+include $(SOURCES:%.cpp=.dep/%.d)
+else
+ifneq ($(nodep), true)
+include $(SOURCES:%.cpp=.dep/%.d)
+endif
+endif
+
+# cleanup
+
+clean :
+	@rm -rf build
+	@echo "Cleaned dtest/test/build/"
+
+clean-dep :
+	@rm -rf .dep
+	@echo "Cleaned dtest/test/.dep/"
+
+# dirs
+
+.dep $(BUILD_DIR):
+	@echo "MKDIR     dtest/test/$@/"
+	@mkdir -p $@
+
+# test
+
+.dep/%.d : %.cpp | .dep
+	@echo "DEP       dtest/test/$@"
+	@set -e; rm -f $@; \
+	$(CXX) $(DEPFLAGS) $(INCLUDES) $< > $@.$$$$; \
+	sed 's,\($*\)\.o[ :]*,test/$(BUILD_DIR)/\1.o $@ : ,g' < $@.$$$$ > $@; \
+	rm -f $@.$$$$
+
+$(BUILD_DIR)/%.so : %.cpp | $(BUILD_DIR)
+	@echo "CXX       dtest/test/$@"
+	@$(CXX) -shared $(CPPFLAGS) $(CXXFLAGS) $(EXTRACXXFLAGS) $(INCLUDES) $< -o $@

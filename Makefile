@@ -15,44 +15,40 @@ DEPFLAGS = -MM
 SOURCES = $(wildcard src/*.cpp)
 OBJ_FILES = $(SOURCES:src/%.cpp=$(BUILD_DIR)/%.o)
 
-TEST_SOURCES = $(wildcard test/*.cpp)
-TEST_OBJ_FILES = $(TEST_SOURCES:test/%.cpp=test/$(BUILD_DIR)/%.so)
-
-ifeq ($(BIN_DIR),)
 BIN_DIR := bin/$(shell uname -s)-$(shell uname -m)
-endif
 
-.PHONY : all clean clean-dep
+.PHONY : all test clean clean-dep
 
-all : dtest $(TEST_OBJ_FILES)
+all : dtest test
+
+test :
+	@$(MAKE) -C test --no-print-directory EXTRACXXFLAGS="$(EXTRACXXFLAGS)" nodep="$(nodep)"
 
 ifndef nodep
 include $(SOURCES:src/%.cpp=.dep/%.d)
-include $(TEST_SOURCES:test/%.cpp=test/.dep/%.d)
 else
 ifneq ($(nodep), true)
 include $(SOURCES:src/%.cpp=.dep/%.d)
-include $(TEST_SOURCES:test/%.cpp=test/.dep/%.d)
 endif
 endif
 
 # cleanup
 
 clean :
-	@rm -rf dtest bin build test/build
+	@rm -rf dtest bin build
 	@echo "Cleaned dtest/"
 	@echo "Cleaned dtest/bin/"
 	@echo "Cleaned dtest/build/"
-	@echo "Cleaned dtest/test/build/"
+	@$(MAKE) -C test --no-print-directory clean nodep="$(nodep)"
 
 clean-dep :
-	@rm -rf .dep test/.dep
+	@rm -rf .dep
 	@echo "Cleaned dtest/.dep/"
-	@echo "Cleaned dtest/test/.dep/"
+	@$(MAKE) -C test --no-print-directory clean-dep nodep="$(nodep)"
 
 # dirs
 
-.dep test/.dep $(BUILD_DIR) test/$(BUILD_DIR) $(BIN_DIR):
+.dep $(BUILD_DIR) $(BIN_DIR):
 	@echo "MKDIR     dtest/$@/"
 	@mkdir -p $@
 
@@ -76,16 +72,3 @@ $(BIN_DIR)/dtest: $(OBJ_FILES) | $(BIN_DIR)
 $(BUILD_DIR)/%.o : src/%.cpp | $(BUILD_DIR)
 	@echo "CXX       dtest/$@"
 	@$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) $(EXTRACXXFLAGS) $(INCLUDES) $< -o $@
-
-# test
-
-test/.dep/%.d : test/%.cpp | test/.dep
-	@echo "DEP       dtest/$@"
-	@set -e; rm -f $@; \
-	$(CXX) $(DEPFLAGS) $(INCLUDES) $< > $@.$$$$; \
-	sed 's,\($*\)\.o[ :]*,test/$(BUILD_DIR)/\1.o $@ : ,g' < $@.$$$$ > $@; \
-	rm -f $@.$$$$
-
-test/$(BUILD_DIR)/%.so : test/%.cpp | test/$(BUILD_DIR)
-	@echo "CXX       dtest/$@"
-	@$(CXX) -shared $(CPPFLAGS) $(CXXFLAGS) $(EXTRACXXFLAGS) $(INCLUDES) $< -o $@
