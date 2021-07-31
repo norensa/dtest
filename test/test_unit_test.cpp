@@ -1,5 +1,10 @@
 #include <dtest.h>
 
+unit("root-test")
+.body([] {
+    assert(true);
+});
+
 unit("unit-test", "pass")
 .body([] {
     assert(true);
