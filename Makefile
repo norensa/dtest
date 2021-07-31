@@ -25,7 +25,7 @@ endif
 
 .PHONY : all clean clean-dep
 
-all : $(BIN_DIR)/dtest test/$(LIB_DIR)/dtest.so
+all : dtest test/$(LIB_DIR)/dtest.so
 
 ifndef nodep
 include $(SOURCES:src/%.cpp=.dep/%.d)
@@ -40,10 +40,12 @@ endif
 # cleanup
 
 clean :
-	@rm -rf bin build test/build
+	@rm -rf dtest bin build test/build test/lib 
+	@echo "Cleaned dtest/"
 	@echo "Cleaned dtest/bin/"
 	@echo "Cleaned dtest/build/"
 	@echo "Cleaned dtest/test/build/"
+	@echo "Cleaned dtest/test/lib/"
 
 clean-dep :
 	@rm -rf .dep test/.dep
@@ -58,8 +60,12 @@ clean-dep :
 
 # core
 
-$(BIN_DIR)/dtest: $(OBJ_FILES)| $(BIN_DIR)
-	@echo "LD        dtest"
+dtest: $(BIN_DIR)/dtest
+	@echo "LN        dtest/dtest"
+	@ln -s $(BIN_DIR)/dtest dtest
+
+$(BIN_DIR)/dtest: $(OBJ_FILES) | $(BIN_DIR)
+	@echo "LD        dtest/$@"
 	@$(CXX) $(CXXFLAGS) $(EXTRACXXFLAGS) $(LDFLAGS) $(LIB_DIRS) $(OBJ_FILES) $(LIBS) -o $@
 
 .dep/%.d : src/%.cpp | .dep
