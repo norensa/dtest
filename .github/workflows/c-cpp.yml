@@ -12,4 +12,4 @@ jobs:
     - name: make
       run: make
     - name: run tests
-      run: ./bin/$(uname -s)-$(uname -m)/dtest
+      run: ./dtest
