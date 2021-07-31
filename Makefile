@@ -1,5 +1,4 @@
 BUILD_DIR = build/$(shell uname -s)-$(shell uname -m)
-LIB_DIR = lib/$(shell uname -s)-$(shell uname -m)
 
 INCLUDES = -Iinclude
 
@@ -17,7 +16,7 @@ SOURCES = $(wildcard src/*.cpp)
 OBJ_FILES = $(SOURCES:src/%.cpp=$(BUILD_DIR)/%.o)
 
 TEST_SOURCES = $(wildcard test/*.cpp)
-TEST_OBJ_FILES = $(TEST_SOURCES:test/%.cpp=test/$(BUILD_DIR)/%.o)
+TEST_OBJ_FILES = $(TEST_SOURCES:test/%.cpp=test/$(BUILD_DIR)/%.so)
 
 ifeq ($(BIN_DIR),)
 BIN_DIR := bin/$(shell uname -s)-$(shell uname -m)
@@ -25,7 +24,7 @@ endif
 
 .PHONY : all clean clean-dep
 
-all : dtest test/$(LIB_DIR)/dtest.so
+all : dtest $(TEST_OBJ_FILES)
 
 ifndef nodep
 include $(SOURCES:src/%.cpp=.dep/%.d)
@@ -40,12 +39,11 @@ endif
 # cleanup
 
 clean :
-	@rm -rf dtest bin build test/build test/lib 
+	@rm -rf dtest bin build test/build
 	@echo "Cleaned dtest/"
 	@echo "Cleaned dtest/bin/"
 	@echo "Cleaned dtest/build/"
 	@echo "Cleaned dtest/test/build/"
-	@echo "Cleaned dtest/test/lib/"
 
 clean-dep :
 	@rm -rf .dep test/.dep
@@ -54,7 +52,7 @@ clean-dep :
 
 # dirs
 
-.dep test/.dep $(BUILD_DIR) test/$(BUILD_DIR) $(BIN_DIR) test/$(LIB_DIR):
+.dep test/.dep $(BUILD_DIR) test/$(BUILD_DIR) $(BIN_DIR):
 	@echo "MKDIR     dtest/$@/"
 	@mkdir -p $@
 
@@ -81,10 +79,6 @@ $(BUILD_DIR)/%.o : src/%.cpp | $(BUILD_DIR)
 
 # test
 
-test/$(LIB_DIR)/dtest.so :  $(TEST_OBJ_FILES) | test/$(LIB_DIR)
-	@echo "LD        dtest/$@"
-	@$(CXX) -shared $(CXXFLAGS) $(EXTRACXXFLAGS) $(LDFLAGS) $(LIB_DIRS) $(TEST_OBJ_FILES) $(LIBS) -o $@
-
 test/.dep/%.d : test/%.cpp | test/.dep
 	@echo "DEP       dtest/$@"
 	@set -e; rm -f $@; \
@@ -92,6 +86,6 @@ test/.dep/%.d : test/%.cpp | test/.dep
 	sed 's,\($*\)\.o[ :]*,test/$(BUILD_DIR)/\1.o $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 
-test/$(BUILD_DIR)/%.o : test/%.cpp | test/$(BUILD_DIR)
+test/$(BUILD_DIR)/%.so : test/%.cpp | test/$(BUILD_DIR)
 	@echo "CXX       dtest/$@"
-	@$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) $(EXTRACXXFLAGS) $(INCLUDES) $< -o $@
+	@$(CXX) -shared $(CPPFLAGS) $(CXXFLAGS) $(EXTRACXXFLAGS) $(INCLUDES) $< -o $@
