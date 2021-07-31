@@ -40,7 +40,11 @@ static void findTests(const char *path, bool load = false) {
         struct dirent *dir;
         if (d) {
             while ((dir = readdir(d)) != NULL) {
-                if (strcmp(dir->d_name, ".") != 0 && strcmp(dir->d_name, "..") != 0) {
+                if (
+                    strcmp(dir->d_name, ".") != 0
+                    && strcmp(dir->d_name, "..") != 0
+                    && strcmp(dir->d_name, "dtest") != 0
+                ) {
                     char *child = (char *) malloc(PATH_MAX);
                     strcpy(child, path);
                     strcat(child, "/");
