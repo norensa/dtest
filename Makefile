@@ -56,7 +56,7 @@ clean-dep :
 
 dtest: $(BIN_DIR)/dtest
 	@echo "LN        dtest/dtest"
-	@ln -s $(BIN_DIR)/dtest dtest
+	@ln -sf $(BIN_DIR)/dtest dtest
 
 $(BIN_DIR)/dtest: $(OBJ_FILES) | $(BIN_DIR)
 	@echo "LD        dtest/$@"
