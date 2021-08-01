@@ -107,19 +107,26 @@ void UnitTest::_driverRun() {
 
     MemoryWatch::clear();
 
-    rep << _collectErrorMessages() << "\n";
+    if (_hasErrors()) {
+        rep << _collectErrorMessages() << ",\n";
+    }
 
-    rep << "Initialization     " << formatDuration(_initTime) << "\n";
+    rep << "\"time\": {";
+    rep << "\n  \"initialization\": " << formatDurationJSON(_initTime);
+    rep << ",\n  \"body\": " << formatDurationJSON(_bodyTime);
+    rep << ",\n  \"cleanup\": " << formatDurationJSON(_completeTime);
+    rep << "\n},";
 
-    rep << "Run                " << formatDuration(_bodyTime) << "\n";
-
-    rep << "Cleanup            " << formatDuration(_completeTime) << "\n";
-
-    rep << "Allocated memory   " << formatSize(_memoryAllocated)
-        << " (" << _blocksAllocated << " block(s))\n" ;
-
-    rep << "Freed memory       " << formatSize(_memoryFreed)
-        << " (" << _blocksDeallocated << " block(s))\n";
+    rep << "\n\"memory\": {";
+    rep << "\n  \"allocated\": {";
+    rep << "\n    \"size\": " << _memoryAllocated;
+    rep << ",\n    \"blocks\": " << _blocksAllocated;
+    rep << "\n  },";
+    rep << "\n  \"freed\": {";
+    rep << "\n    \"size\": " << _memoryFreed;
+    rep << ",\n    \"blocks\": " << _blocksDeallocated;
+    rep << "\n  }";
+    rep << "\n}";
 
     _detailedReport = rep.str();
 }

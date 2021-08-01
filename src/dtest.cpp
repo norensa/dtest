@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
     Test::logStatsToStderr(true);
 
     std::fstream logFile;
-    logFile.open("test.log", std::ios_base::out | std::ios_base::trunc);
+    logFile.open("test.log.json", std::ios_base::out | std::ios_base::trunc);
 
     bool success = Test::runAll(logFile);
 

@@ -122,6 +122,10 @@ private:
 
 protected:
 
+    static inline bool _hasErrors() {
+        return ! __err.empty();
+    }
+
     static std::string _collectErrorMessages();
 
 public:

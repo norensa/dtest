@@ -131,7 +131,7 @@ std::string MemoryWatch::report() {
     char buf[1024];
 
     for (const auto & block : _allocatedBlocks) {
-        s << "\n  Block @ " << block.first << " allocated from:\n";
+        s << "\nBlock @ " << block.first << " allocated from:\n";
 
         char **symbols = backtrace_symbols(block.second.stack, block.second.len);
 
@@ -142,7 +142,7 @@ std::string MemoryWatch::report() {
                 int status;
                 demangled = abi::__cxa_demangle(info.dli_sname, NULL, 0, &status);
                 snprintf(
-                    buf, sizeof(buf), "  %-3d  %p  %s + %p\n",
+                    buf, sizeof(buf), "%-3d  %p  %s + %p\n",
                     block.second.len - i - 1, block.second.stack[i],
                     status == 0 ? demangled : info.dli_sname,
                     (void *) ((char *)block.second.stack[i] - (char *)info.dli_saddr)
@@ -151,7 +151,7 @@ std::string MemoryWatch::report() {
             }
             else {
                 snprintf(
-                    buf, sizeof(buf), "    %-3d  %p  %s\n",
+                    buf, sizeof(buf), "%-3d  %p  %s\n",
                     block.second.len - i - 1, block.second.stack[i],
                     symbols[i]
                 );
@@ -159,7 +159,7 @@ std::string MemoryWatch::report() {
             s << buf;
         }
         free(symbols);
-        if (block.second.len == nMaxFrames) s << "  [truncated]\n";
+        if (block.second.len == nMaxFrames) s << "[truncated]\n";
     }
 
     return s.str();

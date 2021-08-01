@@ -74,7 +74,14 @@ std::string Test::_collectErrorMessages() {
     std::stringstream s;
 
     if (__err.size() > 0) {
-        for (const auto &e : __err) s << e << std::endl;
+        s << "\"errors\": [";
+
+        size_t i = 0;
+        for (const auto &e : __err) {
+            if (i++ > 0) s << ",";
+            s << "\n"<< indent(jsonify(e), 2);
+        }
+        s << "\n]";
 
         __err.clear();
     }
@@ -115,6 +122,8 @@ bool Test::runAll(std::ostream &out) {
 
     if (_logStatsToStderr) std::cerr << std::endl;
 
+    out << "{\n  \"tests\": [";
+
     uint32_t count = 0;
     while (! ready.empty()) {
 
@@ -136,23 +145,35 @@ bool Test::runAll(std::ostream &out) {
             shortTestName.resize(33, ' ');
         }
 
-        out << "RUNNING TEST #" << testnum << "  " << testname << "   ";
-        out.flush();
         if (_logStatsToStderr) {
             std::cerr << "RUNNING TEST #" << testnum << "  " << shortTestName  << "   ";
         }
 
         test->_run();
 
-        auto statusStr = statusString(test->_status);
-        out << statusStr << "\n";
-        for (size_t i = 0; i < test->_childStatus.size(); ++i) {
-            out << "  Child #" << i + 1 << "   " << statusString(test->_childStatus[i]) << "\n";
-            out << indent(test->_childDetailedReport[i], 4) << "\n";
+        if (count > 0) out << ",";
+        out << "\n    {";
+        out << "\n      \"i\": " << count << ",";
+        out << "\n      \"name\": \"" << testname << "\",";
+        out << "\n      \"status\": \"" << statusString(test->_status) << "\",";
+        out << "\n      \"report\": {\n" << indent(test->_detailedReport, 8);
+        out << "\n      }";
+        if (! test->_childStatus.empty()) {
+            out << ",\n      \"workers\": [";
+            for (size_t i = 0; i < test->_childStatus.size(); ++i) {
+                if (i > 0) out << ",";
+
+                out << "\n        {";
+                out << "\n          \"status\": \"" << statusString(test->_childStatus[i]) << "\",";
+                out << "\n          \"report\": {\n" << indent(test->_childDetailedReport[i], 12);
+                out << "\n          }";
+                out << "\n        }";
+            }
+            out << "\n      ]";
         }
-        out << indent(test->_detailedReport, 2) << "\n";
+        out << "\n    }";
         out.flush();
-        if (_logStatsToStderr) std::cerr << statusStr << "\n";
+        if (_logStatsToStderr) std::cerr << statusString(test->_status) << "\n";
 
         if (test->_status == Status::PASS) {
             auto it = remaining.find(test->_module);
@@ -179,11 +200,14 @@ bool Test::runAll(std::ostream &out) {
         delete test;
     }
 
+    out << "\n  ]";
+
     // print a dashed line
-    std::string line = "";
-    line.resize(80, '-');
-    out << line << "\n";
-    if (_logStatsToStderr) std::cerr << "\n" << line << "\n";
+    if (_logStatsToStderr) {
+        std::string line = "";
+        line.resize(80, '-');
+        std::cerr << "\n" << line << "\n";
+    }
 
     // print summary
     std::stringstream resultSummary;
@@ -193,8 +217,10 @@ bool Test::runAll(std::ostream &out) {
             << " TESTS " << __statusStringPastTense[(uint32_t) r.first]
             << "\n";
     }
-    out << resultSummary.str();
     if (_logStatsToStderr) std::cerr << resultSummary.str();
+
+    out << "\n}\n";
+    out.flush();
 
     return success;
 }

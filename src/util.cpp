@@ -14,6 +14,19 @@ std::string formatDuration(double nanos) {
     return s.str();
 }
 
+std::string formatDurationJSON(double nanos) {
+    std::stringstream s;
+    s.setf(std::ios::fixed);
+    s.precision(3);
+    
+    if (nanos < 1e3) s << "{ \"value\": " << nanos << ", \"unit\": \"ns\" }";
+    else if (nanos < 1e6) s << "{ \"value\": " << nanos / 1e3 << ", \"unit\": \"us\" }";
+    else if (nanos < 1e9) s << "{ \"value\": " << nanos / 1e6 << ", \"unit\": \"ms\" }";
+    else s << "{ \"value\": " << nanos / 1e9 << ", \"unit\": \"s\" }";
+
+    return s.str();
+}
+
 std::string formatSize(size_t size) {
     static const size_t KB = 1024;
     static const size_t MB = 1024 * KB;
@@ -51,5 +64,25 @@ std::string indent(const std::string &str, int spaces) {
         ++p;
     }
 
+    return s.str();
+}
+
+std::string jsonify(const std::string &str) {
+    std::stringstream s;
+
+    if (str.find('\n') == std::string::npos) {
+        s << "\"" << str << "\"";
+    }
+    else {
+        s << "[\n  \"";
+        const char *p = str.c_str();
+        while (*p != '\0') {
+            if (*p == '\n') s << "\",\n  \"";
+            else s << *p;
+            ++p;
+        }
+        s << "\"\n]";
+
+    }
     return s.str();
 }

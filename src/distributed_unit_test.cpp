@@ -45,15 +45,24 @@ void DistributedUnitTest::_workerRun() {
 
     MemoryWatch::clear();
 
-    rep << _collectErrorMessages() << "\n";
+    if (_hasErrors()) {
+        rep << _collectErrorMessages() << ",\n";
+    }
 
-    rep << "Run                " << formatDuration(_workerBodyTime) << "\n";
+    rep << "\"time\": {";
+    rep << "\n  \"body\": " << formatDurationJSON(_workerBodyTime);
+    rep << "\n},";
 
-    rep << "Allocated memory   " << formatSize(_memoryAllocated)
-        << " (" << _blocksAllocated << " block(s))\n" ;
-
-    rep << "Freed memory       " << formatSize(_memoryFreed)
-        << " (" << _blocksDeallocated << " block(s))\n";
+    rep << "\n\"memory\": {";
+    rep << "\n  \"allocated\": {";
+    rep << "\n    \"size\": " << _memoryAllocated;
+    rep << ",\n    \"blocks\": " << _blocksAllocated;
+    rep << "\n  },";
+    rep << "\n  \"freed\": {";
+    rep << "\n    \"size\": " << _memoryFreed;
+    rep << ",\n    \"blocks\": " << _blocksDeallocated;
+    rep << "\n  }";
+    rep << "\n}";
 
     _detailedReport = rep.str();
 }
