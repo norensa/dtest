@@ -38,8 +38,10 @@ protected:
     std::unordered_set<std::string> _dependencies;
 
     Status _status = Status::PENDING;
+    std::vector<Status> _childStatus;
 
     std::string _detailedReport = "";
+    std::vector<std::string> _childDetailedReport;
 
     uint16_t _numWorkers = 0;
 
@@ -55,7 +57,7 @@ protected:
 
 private:
 
-    Status _run();
+    void _run();
 
 public:
 
@@ -112,6 +114,12 @@ private:
 
     static uint16_t _defaultNumWorkers;
 
+    static thread_local bool _trackMemory;
+
+    static void _enter();
+
+    static void _exit();
+
 protected:
 
     static std::string _collectErrorMessages();
@@ -123,10 +131,9 @@ public:
     }
 
     static inline void logError(const std::string &message) {
-        bool tmp = MemoryWatch::isTracking();
-        MemoryWatch::track(false);
+        _enter();
         __err.push_back(message);
-        MemoryWatch::track(tmp);
+        _exit();
     }
 
     static inline void logStatsToStderr(bool val) {
@@ -180,6 +187,8 @@ private:
         Lazy<Socket> _socket;
         uint32_t _notifyCount = 0;
         bool _done = false;
+        Test::Status _status = Test::Status::PENDING;
+        std::string _detailedReport = "";
 
         inline WorkerHandle()
         : _socket([] { return nullptr; })
@@ -247,7 +256,7 @@ private:
 
     void _run(const Test *test);
 
-    void _join();
+    void _join(Test *test);
 
 public:
 

@@ -10,7 +10,7 @@ using namespace dtest;
 
 ///////////////////////////////////////////////////////////////////////////////
 
-Test::Status Test::_run() {
+void Test::_run() {
 
     if (_isDriver) {
         if (_distributed()) {
@@ -21,7 +21,7 @@ Test::Status Test::_run() {
             DriverContext::instance->_run(this);
             _driverRun();
 
-            DriverContext::instance->_join();
+            DriverContext::instance->_join(this);
             DriverContext::instance->_deallocateWorkers(extraWorkers);
         }
         else {
@@ -31,8 +31,6 @@ Test::Status Test::_run() {
     else {
         _workerRun();
     }
-
-    return _status;
 }
 
 std::string Test::__statusString[] = {
@@ -60,6 +58,17 @@ bool Test::_logStatsToStderr = false;
 bool Test::_isDriver = false;
 
 uint16_t Test::_defaultNumWorkers = 4;
+
+thread_local bool Test::_trackMemory;
+
+void Test::_enter() {
+    _trackMemory = MemoryWatch::isTracking();
+    MemoryWatch::track(false);
+}
+
+void Test::_exit() {
+    MemoryWatch::track(_trackMemory);
+}
 
 std::string Test::_collectErrorMessages() {
     std::stringstream s;
@@ -133,9 +142,15 @@ bool Test::runAll(std::ostream &out) {
             std::cerr << "RUNNING TEST #" << testnum << "  " << shortTestName  << "   ";
         }
 
-        auto statusStr = statusString(test->_run());
+        test->_run();
 
-        out << statusStr << "\n" << indent(test->_detailedReport, 2) << "\n";
+        auto statusStr = statusString(test->_status);
+        out << statusStr << "\n";
+        for (size_t i = 0; i < test->_childStatus.size(); ++i) {
+            out << "  Child #" << i + 1 << "   " << statusString(test->_childStatus[i]) << "\n";
+            out << indent(test->_childDetailedReport[i], 4) << "\n";
+        }
+        out << indent(test->_detailedReport, 2) << "\n";
         out.flush();
         if (_logStatsToStderr) std::cerr << statusStr << "\n";
 
@@ -272,6 +287,7 @@ uint32_t DriverContext::_waitForEvent() {
         auto it = _allocatedWorkers.find(id);
         if (it == _allocatedWorkers.end()) return -1;
         it->second._done = true;
+        m >> it->second._status >> it->second._detailedReport;
     }
     break;
 
@@ -328,28 +344,39 @@ void DriverContext::_run(const Test *test) {
     }
 }
 
-void DriverContext::_join() {
+void DriverContext::_join(Test *test) {
     for (auto &w : _allocatedWorkers) {
         while (! w.second._done) {
             _waitForEvent();
         }
+
+        test->_childStatus.push_back(w.second._status);
+        test->_childDetailedReport.push_back(w.second._detailedReport);
     }
 }
 
 void DriverContext::notify() {
+    Test::_enter();
+
     for (auto &w : _allocatedWorkers) {
         w.second.notify();
     }
+
+    Test::_exit();
 }
 
 void DriverContext::wait(uint32_t n) {
+    Test::_enter();
 
     if (n == -1u) n = _allocatedWorkers.size();
 
     std::unordered_set<uint32_t> pulled;
 
     for (auto &w : _allocatedWorkers) {
-        if (pulled.size() == n) return;
+        if (pulled.size() == n) {
+            Test::_exit();
+            return;
+        }
 
         if (w.second._notifyCount > 0) {
             --w.second._notifyCount;
@@ -370,6 +397,8 @@ void DriverContext::wait(uint32_t n) {
             pulled.insert(it->second._id);
         }
     }
+
+    Test::_exit();
 }
 
 Lazy<DriverContext> DriverContext::instance([] { return new DriverContext(); });
@@ -418,7 +447,7 @@ void WorkerContext::_waitForEvent() {
             t->_run();
 
             Message m;
-            m << OpCode::FINISHED_TEST << _id;
+            m << OpCode::FINISHED_TEST << _id << t->_status << t->_detailedReport;
             m.send(_driverSocket);
         }
 
@@ -441,12 +470,18 @@ void WorkerContext::_waitForEvent() {
 }
 
 void WorkerContext::notify() {
+    Test::_enter();
+
     Message m;
     m << OpCode::NOTIFY << _id;
     m.send(_driverSocket);
+
+    Test::_exit();
 }
 
 void WorkerContext::wait(uint32_t n) {
+    Test::_enter();
+
     if (n == -1u) n = 1;
 
     while (_notifyCount < n) {
@@ -454,6 +489,8 @@ void WorkerContext::wait(uint32_t n) {
     }
 
     _notifyCount -= n;
+
+    Test::_exit();
 }
 
 Lazy<WorkerContext> WorkerContext::instance([] { return new WorkerContext(); });
