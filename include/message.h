@@ -18,6 +18,7 @@ private:
     void *_allocBuf;
     size_t _allocLen;
     uint8_t *_buf;
+    bool _hasData = false;
 
     void _fit(size_t sz) {
         size_t len = _buf - (uint8_t *) _allocBuf;
@@ -52,6 +53,10 @@ public:
     void send(Socket &socket);
 
     Message & recv(Socket &socket);
+
+    inline bool hasData() const {
+        return _hasData;
+    }
 
     inline Message & put(const void *data, size_t len) {
         _fit(len);

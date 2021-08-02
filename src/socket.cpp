@@ -186,17 +186,21 @@ void Socket::send(void *data, size_t len) {
     }
 }
 
-void Socket::recv(void *data, size_t len) {
+size_t Socket::recv(void *data, size_t len, bool returnOnBlock) {
     size_t maxLen = _INITIAL_SYSCALL_SIZE;
 
     while (len > 0) {
         ssize_t recvd = sys::recv(_fd, data, len < maxLen ? len : maxLen, 0);
-        if (recvd != -1) {
+        if (recvd == 0) {
+            return -1u;
+        }
+        else if (recvd != -1) {
             len -= recvd;
             data = (uint8_t *) data + recvd;
         }
         else if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            continue;
+            if (returnOnBlock) return len;
+            else continue;
         }
         else if (errno != EINTR) {
             throw std::runtime_error(
@@ -204,6 +208,8 @@ void Socket::recv(void *data, size_t len) {
             );
         }
     }
+
+    return len;
 }
 
 void Socket::close() {
@@ -280,6 +286,14 @@ Socket & Socket::pollOrAccept() {
     }
 
     return *_openConnections[incoming];
+}
+
+void Socket::dispose(Socket &sock) {
+    int fd = sock._fd;
+    auto c = _openConnections[fd];
+    c->close();
+    delete c;
+    _openConnections.erase(fd);
 }
 
 sockaddr Socket::self_address_ipv4(uint16_t port) {

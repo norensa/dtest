@@ -242,7 +242,6 @@ Context * Context::_currentCtx = nullptr;
 
 // DriverContext::WorkerHandle /////////////////////////////////////////////////
 
-
 void DriverContext::WorkerHandle::run(const Test *test) {
     Message m;
     m << OpCode::RUN_TEST << test->_module << test->_name;
@@ -292,42 +291,53 @@ void DriverContext::_start() {
 }
 
 uint32_t DriverContext::_waitForEvent() {
-    auto &conn = _socket.pollOrAccept();
+    while (true) {
+        auto &conn = _socket.pollOrAccept();
 
-    Message m;
-    m.recv(conn);
-    OpCode op;
-    uint32_t id;
-    m >> op >> id;
+        Message m;
+        try {
+            m.recv(conn);
+        }
+        catch (...) {
+            _socket.dispose(conn);
+            continue;
+        }
 
-    switch (op) {
-    case OpCode::WORKER_STARTED: {
-        auto it = _workers.find(id);
-        if (it == _workers.end()) return -1;
-        m >> it->second._addr;
-        it->second._running = true;
+        if (! m.hasData()) continue;
+
+        OpCode op;
+        uint32_t id;
+        m >> op >> id;
+
+        switch (op) {
+        case OpCode::WORKER_STARTED: {
+            auto it = _workers.find(id);
+            if (it == _workers.end()) return -1;
+            m >> it->second._addr;
+            it->second._running = true;
+        }
+        break;
+
+        case OpCode::FINISHED_TEST: {
+            auto it = _allocatedWorkers.find(id);
+            if (it == _allocatedWorkers.end()) return -1;
+            it->second._done = true;
+            m >> it->second._status >> it->second._detailedReport;
+        }
+        break;
+
+        case OpCode::NOTIFY: {
+            auto it = _allocatedWorkers.find(id);
+            if (it == _allocatedWorkers.end()) return -1;
+            ++it->second._notifyCount;
+        }
+        break;
+
+        default: break;
+        }
+
+        return id;
     }
-    break;
-
-    case OpCode::FINISHED_TEST: {
-        auto it = _allocatedWorkers.find(id);
-        if (it == _allocatedWorkers.end()) return -1;
-        it->second._done = true;
-        m >> it->second._status >> it->second._detailedReport;
-    }
-    break;
-
-    case OpCode::NOTIFY: {
-        auto it = _allocatedWorkers.find(id);
-        if (it == _allocatedWorkers.end()) return -1;
-        ++it->second._notifyCount;
-    }
-    break;
-
-    default: break;
-    }
-
-    return id;
 }
 
 std::list<uint32_t> DriverContext::_allocateWorkers(uint16_t n) {
@@ -444,54 +454,65 @@ void WorkerContext::_start(uint32_t id) {
 }
 
 void WorkerContext::_waitForEvent() {
+    while (true) {
+        auto &conn = _socket.pollOrAccept();
 
-    auto &conn = _socket.pollOrAccept();
-
-    Message m;
-    m.recv(conn);
-    OpCode op;
-    m >> op;
-
-    switch (op) {
-    case OpCode::RUN_TEST: {
-        if (_inTest) break;
-        _inTest = true;
-
-        std::string module;
-        std::string name;
-
-        m >> module >> name;
-
-        auto it = std::find_if(
-            Test::__tests[module].begin(),
-            Test::__tests[module].end(),
-            [&name] (Test *t) { return t->name() == name; }
-        );
-
-        if (it != Test::__tests[module].end()) {
-            Test *t = (*it)->copy();
-            t->_run();
-
-            Message m;
-            m << OpCode::FINISHED_TEST << _id << t->_status << t->_detailedReport;
-            m.send(_driverSocket);
+        Message m;
+        try {
+            m.recv(conn);
+        }
+        catch (...) {
+            continue;
         }
 
-        _inTest = false;
-    }
-    break;
+        if (! m.hasData()) continue;
 
-    case OpCode::NOTIFY: {
-        ++_notifyCount;
-    }
-    break;
+        OpCode op;
+        m >> op;
 
-    case OpCode::TERMINATE: {
-        exit(0);
-    }
-    break;
+        switch (op) {
+        case OpCode::RUN_TEST: {
+            if (_inTest) break;
+            _inTest = true;
 
-    default: break;
+            std::string module;
+            std::string name;
+
+            m >> module >> name;
+
+            auto it = std::find_if(
+                Test::__tests[module].begin(),
+                Test::__tests[module].end(),
+                [&name] (Test *t) { return t->name() == name; }
+            );
+
+            if (it != Test::__tests[module].end()) {
+                Test *t = (*it)->copy();
+                t->_run();
+
+                Message m;
+                m << OpCode::FINISHED_TEST << _id << t->_status << t->_detailedReport;
+                m.send(_driverSocket);
+            }
+
+            _inTest = false;
+        }
+        break;
+
+        case OpCode::NOTIFY: {
+            ++_notifyCount;
+        }
+        break;
+
+        case OpCode::TERMINATE: {
+            exit(0);
+        }
+        break;
+
+        default: break;
+        }
+
+        return;
     }
 }
 

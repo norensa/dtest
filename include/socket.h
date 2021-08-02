@@ -91,13 +91,15 @@ public:
 
     void send(void *data, size_t len);
 
-    void recv(void *data, size_t len);
+    size_t recv(void *data, size_t len, bool returnOnBlock = false);
 
     void close();
 
     Socket accept();
 
     Socket & pollOrAccept();
+
+    void dispose(Socket &sock);
 
     static sockaddr self_address_ipv4(uint16_t port);
 
