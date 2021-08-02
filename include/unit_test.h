@@ -11,8 +11,6 @@ class UnitTest : public Test {
 protected:
 
     // configuration
-    bool _expectFailure = false;
-    bool _expectTimeout = false;
     uint64_t _timeout = -1lu;
     bool _ignoreMemoryLeak = false;
 
@@ -98,13 +96,8 @@ public:
         return timeoutNanos(seconds * 1000000000lu);
     }
 
-    inline UnitTest & expectFailure(bool val = true) {
-        _expectFailure = val;
-        return *this;
-    }
-
-    inline UnitTest & expectTimeout(bool val = true) {
-        _expectTimeout = val;
+    inline UnitTest & expect(Status status) {
+        Test::expect(status);
         return *this;
     }
 

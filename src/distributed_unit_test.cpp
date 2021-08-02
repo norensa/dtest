@@ -13,15 +13,9 @@ void DistributedUnitTest::_workerRun() {
 
     _workerBodyTime = _timedRun(_workerBody);
 
-    if (_status == Status::PASS) {
-        if (_bodyTime > _timeout) {
-            err("Exceeded timeout of " + formatDuration(_timeout));
-            if (! _expectTimeout) _status = Status::TIMEOUT;
-        }
-        else if (_expectTimeout) {
-            err("Expected timeout after " + formatDuration(_timeout));
-            _status = Status::FAIL;
-        }
+    if (_status == Status::PASS && _workerBodyTime > _timeout) {
+        err("Exceeded timeout of " + formatDuration(_timeout));
+        _status = Status::TIMEOUT;
     }
 
     std::stringstream rep;

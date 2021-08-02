@@ -89,13 +89,8 @@ public:
         return *this;
     }
 
-    inline DistributedUnitTest & expectFailure(bool val = true) {
-        UnitTest::expectFailure(val);
-        return *this;
-    }
-
-    inline DistributedUnitTest & expectTimeout(bool val = true) {
-        UnitTest::expectTimeout(val);
+    inline DistributedUnitTest & expect(Status status) {
+        UnitTest::expect(status);
         return *this;
     }
 

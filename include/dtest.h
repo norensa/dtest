@@ -1,5 +1,9 @@
 #pragma once
 
+#include <test.h>
+
+using Status = dtest::Test::Status;
+
 #define __dtest_concat(a,b) __dtest_concat2(a,b)    // force expand
 #define __dtest_concat2(a,b) a ## b                 // actually concatenate
 

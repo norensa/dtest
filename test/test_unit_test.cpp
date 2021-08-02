@@ -14,11 +14,18 @@ unit("unit-test", "fail")
 .body([] {
     assert(false);
 })
-.expectFailure();
+.expect(Status::FAIL);
 
 unit("unit-test", "timeout")
 .body([] {
     assert(true);
 })
 .timeoutNanos(0)
-.expectTimeout();
+.expect(Status::TIMEOUT);
+
+unit("unit-test", "mem-leak")
+.body([] {
+    malloc(1);
+    assert(true);
+})
+.expect(Status::PASS_WITH_MEMORY_LEAK);

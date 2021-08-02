@@ -81,10 +81,14 @@ int main(int argc, char *argv[]) {
     logFile.open("test.log.json", std::ios_base::out | std::ios_base::trunc);
 
     bool success = Test::runAll(logFile);
-
     logFile.close();
-    std::cerr << "\nSee test.log for more details.\n\n";
 
-    if (success) exit(0);
-    else exit(1);
+    if (success) {
+        std::cerr << "\nAll tests OK. See test.log.json for more details.\n\n";
+        exit(0);
+    }
+    else {
+        std::cerr << "\nOne or more tests failed. See test.log.json for more details.\n\n";
+        exit(1);
+    }
 }

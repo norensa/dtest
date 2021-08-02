@@ -31,22 +31,24 @@ void Test::_run() {
     else {
         _workerRun();
     }
+
+    _success = _status == _expectedStatus;
 }
 
 std::string Test::__statusString[] = {
-    "PENDING",
     "PASS",
     "PASS (with memory leak)",
-    "FAIL",
     "TIMEOUT",
+    "FAIL",
+    "PENDING",
 };
 
 static std::string __statusStringPastTense[] = {
-    "PENDING",
     "PASSED",
     "PASSED (with memory leak)",
-    "FAILED",
     "TIMED OUT",
+    "FAILED",
+    "PENDING",
 };
 
 std::unordered_map<std::string, std::list<Test *>> Test::__tests;
@@ -122,6 +124,8 @@ bool Test::runAll(std::ostream &out) {
 
     if (_logStatsToStderr) std::cerr << std::endl;
 
+    out << std::boolalpha;
+
     out << "{\n  \"tests\": [";
 
     uint32_t count = 0;
@@ -135,14 +139,14 @@ bool Test::runAll(std::ostream &out) {
 
         auto testname = test->_module + "::" + test->_name;
         auto shortTestName = testname;
-        if (testname.size() > 33) {
+        if (testname.size() > 52) {
             shortTestName = 
-                testname.substr(0, 14)
+                testname.substr(0, 20)
                 + " ... "
-                + testname.substr(testname.size() - 14);
+                + testname.substr(testname.size() - 27);
         }
         else {
-            shortTestName.resize(33, ' ');
+            shortTestName.resize(52, ' ');
         }
 
         if (_logStatsToStderr) {
@@ -155,6 +159,7 @@ bool Test::runAll(std::ostream &out) {
         out << "\n    {";
         out << "\n      \"i\": " << count << ",";
         out << "\n      \"name\": \"" << testname << "\",";
+        out << "\n      \"success\": " << test->_success << ",";
         out << "\n      \"status\": \"" << statusString(test->_status) << "\",";
         out << "\n      \"report\": {\n" << indent(test->_detailedReport, 8);
         out << "\n      }";
@@ -173,9 +178,9 @@ bool Test::runAll(std::ostream &out) {
         }
         out << "\n    }";
         out.flush();
-        if (_logStatsToStderr) std::cerr << statusString(test->_status) << "\n";
+        if (_logStatsToStderr) std::cerr << (test->_success ? "PASS" : "FAIL") << "\n";
 
-        if (test->_status == Status::PASS) {
+        if (test->_success) {
             auto it = remaining.find(test->_module);
             it->second.erase(test);     // remove from it module's remaining list of tests
             if (it->second.empty()) {   // if entire module test completed
@@ -384,6 +389,10 @@ void DriverContext::_join(Test *test) {
     for (auto &w : _allocatedWorkers) {
         while (! w.second._done) {
             _waitForEvent();
+        }
+
+        if (w.second._status > test->_status) {
+            test->_status = w.second._status;
         }
 
         test->_childStatus.push_back(w.second._status);

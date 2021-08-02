@@ -23,11 +23,11 @@ class Test {
 public:
 
     enum class Status {
-        PENDING,
         PASS,
         PASS_WITH_MEMORY_LEAK,
-        FAIL,
         TIMEOUT,
+        FAIL,
+        PENDING,
     };
 
 protected:
@@ -37,7 +37,10 @@ protected:
 
     std::unordered_set<std::string> _dependencies;
 
+    bool _success = false;
+
     Status _status = Status::PENDING;
+    Status _expectedStatus = Status::PASS;
     std::vector<Status> _childStatus;
 
     std::string _detailedReport = "";
@@ -89,6 +92,11 @@ public:
 
     inline Test & dependsOn(const std::initializer_list<std::string> &dependencies) {
         _dependencies.insert(dependencies.begin(), dependencies.end());
+        return *this;
+    }
+
+    inline Test & expect(Status status) {
+        _expectedStatus = status;
         return *this;
     }
 
