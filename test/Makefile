@@ -49,7 +49,7 @@ clean-dep :
 	@echo "DEP       dtest/test/$@"
 	@set -e; rm -f $@; \
 	$(CXX) $(DEPFLAGS) $(INCLUDES) $< > $@.$$$$; \
-	sed 's,\($*\)\.o[ :]*,test/$(BUILD_DIR)/\1.o $@ : ,g' < $@.$$$$ > $@; \
+	sed 's,\($*\)\.o[ :]*,test/$(BUILD_DIR)/\1.so $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 
 $(BUILD_DIR)/%.so : %.cpp | $(BUILD_DIR)
