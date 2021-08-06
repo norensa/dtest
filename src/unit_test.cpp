@@ -9,7 +9,7 @@ uint64_t UnitTest::_timedRun(const std::function<void()> &func) {
     auto start = std::chrono::high_resolution_clock::now();
 
     if (func) {
-        MemoryWatch::track(true);
+        sandbox().enter();
 
         try {
             _status = Status::FAIL;
@@ -21,14 +21,22 @@ uint64_t UnitTest::_timedRun(const std::function<void()> &func) {
         catch (const AssertionException &e) {
             err(e.msg);
         }
+        catch (const SandboxFatalException &e) {
+            err(
+                std::string("Detected sandbox() fatal error: ") + e.what()
+                + ". Caused by:\n" + e.callstack().toString()
+            );
+        }
         catch (const std::exception &e) {
-            err(e.what());
+            err(
+                std::string("Detected uncaught exception: ") + e.what()
+            );
         }
         catch (...) {
             err("Unknown exception thrown");
         }
 
-        MemoryWatch::track(false);
+        sandbox().exit();
     }
 
     auto end = std::chrono::high_resolution_clock::now();
@@ -38,11 +46,11 @@ uint64_t UnitTest::_timedRun(const std::function<void()> &func) {
 }
 
 void UnitTest::_driverRun() {
-    _memoryLeak = MemoryWatch::totalUsedMemory();
-    _memoryAllocated = MemoryWatch::totalAllocated();
-    _memoryFreed = MemoryWatch::totalFreed();
-    _blocksAllocated = MemoryWatch::allocatedBlocks();
-    _blocksDeallocated = MemoryWatch::freedBlocks();
+    _memoryLeak = sandbox().usedMemory();
+    _memoryAllocated = sandbox().allocatedMemorySize();
+    _memoryFreed = sandbox().freedMemorySize();
+    _blocksAllocated = sandbox().allocatedMemoryBlocks();
+    _blocksDeallocated = sandbox().freedMemoryBlocks();
 
     _initTime = _timedRun(_onInit);
     _bodyTime = _timedRun(_body);
@@ -55,11 +63,11 @@ void UnitTest::_driverRun() {
 
     std::stringstream rep;
 
-    _memoryLeak = MemoryWatch::totalUsedMemory() - _memoryLeak;
-    _memoryAllocated = MemoryWatch::totalAllocated() - _memoryAllocated;
-    _memoryFreed = MemoryWatch::totalFreed() - _memoryFreed;
-    _blocksAllocated = MemoryWatch::allocatedBlocks() - _blocksAllocated;
-    _blocksDeallocated = MemoryWatch::freedBlocks() - _blocksDeallocated;
+    _memoryLeak = sandbox().usedMemory() - _memoryLeak;
+    _memoryAllocated = sandbox().allocatedMemorySize() - _memoryAllocated;
+    _memoryFreed = sandbox().freedMemorySize() - _memoryFreed;
+    _blocksAllocated = sandbox().allocatedMemoryBlocks() - _blocksAllocated;
+    _blocksDeallocated = sandbox().freedMemoryBlocks() - _blocksDeallocated;
 
     if (_status == Status::PASS && _memoryLeak > 0 && ! _ignoreMemoryLeak) {
         _status = Status::PASS_WITH_MEMORY_LEAK;
@@ -67,11 +75,11 @@ void UnitTest::_driverRun() {
             "WARNING: Possible memory leak detected. "
             + formatSize(_memoryLeak) + " ("
             + std::to_string(_blocksAllocated - _blocksDeallocated)
-            + " block(s)) difference." + MemoryWatch::report()
+            + " block(s)) difference." + sandbox().memoryReport()
         );
     }
 
-    MemoryWatch::clear();
+    sandbox().clearMemoryBlocks();
 
     if (_hasErrors()) {
         rep << _collectErrorMessages() << ",\n";

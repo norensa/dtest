@@ -60,17 +60,6 @@ bool Test::_isDriver = false;
 
 uint16_t Test::_defaultNumWorkers = 4;
 
-thread_local bool Test::_trackMemory;
-
-void Test::_enter() {
-    _trackMemory = MemoryWatch::isTracking();
-    MemoryWatch::track(false);
-}
-
-void Test::_exit() {
-    MemoryWatch::track(_trackMemory);
-}
-
 std::string Test::_collectErrorMessages() {
     std::stringstream s;
 
@@ -404,28 +393,28 @@ void DriverContext::_join(Test *test) {
 }
 
 Message DriverContext::createUserMessage() {
-    Test::_enter();
+    sandbox().exit();
 
     Message m;
     m << OpCode::USER_MESSAGE;
 
-    Test::_exit();
+    sandbox().enter();
 
     return m;
 }
 
 void DriverContext::sendUserMessage(Message &message) {
-    Test::_enter();
+    sandbox().exit();
 
     for (auto &w : _allocatedWorkers) {
         message.send(w.second._socket);
     }
 
-    Test::_exit();
+    sandbox().enter();
 }
 
 Message DriverContext::getUserMessage() {
-    Test::_enter();
+    sandbox().exit();
 
     while (_userMessages.empty()) {
         _waitForEvent();
@@ -433,33 +422,30 @@ Message DriverContext::getUserMessage() {
     Message m = std::move(_userMessages.front());
     _userMessages.pop_front();
 
-    Test::_exit();
+    sandbox().enter();
 
     return m;
 }
 
 void DriverContext::notify() {
-    Test::_enter();
+    sandbox().exit();
 
     for (auto &w : _allocatedWorkers) {
         w.second.notify();
     }
 
-    Test::_exit();
+    sandbox().enter();
 }
 
 void DriverContext::wait(uint32_t n) {
-    Test::_enter();
+    sandbox().exit();
 
     if (n == -1u) n = _allocatedWorkers.size();
 
-    std::unordered_set<uint32_t> pulled;
+    auto &pulled = *new std::unordered_set<uint32_t>();
 
     for (auto &w : _allocatedWorkers) {
-        if (pulled.size() == n) {
-            Test::_exit();
-            return;
-        }
+        if (pulled.size() == n) break;
 
         if (w.second._notifyCount > 0) {
             --w.second._notifyCount;
@@ -481,7 +467,8 @@ void DriverContext::wait(uint32_t n) {
         }
     }
 
-    Test::_exit();
+    delete &pulled;
+    sandbox().enter();
 }
 
 Lazy<DriverContext> DriverContext::instance([] { return new DriverContext(); });
@@ -569,26 +556,26 @@ void WorkerContext::_waitForEvent() {
 }
 
 Message WorkerContext::createUserMessage() {
-    Test::_enter();
+    sandbox().exit();
 
     Message m;
     m << OpCode::USER_MESSAGE << _id;
 
-    Test::_exit();
+    sandbox().enter();
 
     return m;
 }
 
 void WorkerContext::sendUserMessage(Message &message) {
-    Test::_enter();
+    sandbox().exit();
 
     message.send(_driverSocket);
 
-    Test::_exit();
+    sandbox().enter();
 }
 
 Message WorkerContext::getUserMessage() {
-    Test::_enter();
+    sandbox().exit();
 
     while (_userMessages.empty()) {
         _waitForEvent();
@@ -596,23 +583,23 @@ Message WorkerContext::getUserMessage() {
     Message m = _userMessages.front();
     _userMessages.pop_front();
 
-    Test::_exit();
+    sandbox().enter();
 
     return m;
 }
 
 void WorkerContext::notify() {
-    Test::_enter();
+    sandbox().exit();
 
     Message m;
     m << OpCode::NOTIFY << _id;
     m.send(_driverSocket);
 
-    Test::_exit();
+    sandbox().enter();
 }
 
 void WorkerContext::wait(uint32_t n) {
-    Test::_enter();
+    sandbox().exit();
 
     if (n == -1u) n = 1;
 
@@ -622,7 +609,7 @@ void WorkerContext::wait(uint32_t n) {
 
     _notifyCount -= n;
 
-    Test::_exit();
+    sandbox().enter();
 }
 
 Lazy<WorkerContext> WorkerContext::instance([] { return new WorkerContext(); });

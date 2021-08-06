@@ -10,7 +10,7 @@
 #include <stdint.h>
 #include <socket.h>
 #include <unistd.h>
-#include <memory_watch.h>
+#include <sandbox.h>
 #include <lazy.h>
 #include <message.h>
 
@@ -123,12 +123,6 @@ private:
 
     static uint16_t _defaultNumWorkers;
 
-    static thread_local bool _trackMemory;
-
-    static void _enter();
-
-    static void _exit();
-
 protected:
 
     static inline bool _hasErrors() {
@@ -144,9 +138,9 @@ public:
     }
 
     static inline void logError(const std::string &message) {
-        _enter();
+        sandbox().exit();
         __err.push_back(message);
-        _exit();
+        sandbox().enter();
     }
 
     static inline void logStatsToStderr(bool val) {

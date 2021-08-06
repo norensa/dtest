@@ -4,6 +4,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <socket.h>
+#include <sandbox.h>
 
 #include <string>
 #include <vector>
@@ -59,41 +60,63 @@ private:
 public:
 
     inline Message(size_t len = _DEFAULT_BUFFER_SIZE) {
+        sandbox().exit();
+
         _allocBuf = malloc(len);
         _allocLen = len;
         _buf = (uint8_t *) _allocBuf + sizeof(size_t);
+
+        sandbox().enter();
     }
 
     inline Message(const Message &rhs) {
+        sandbox().exit();
+
         _copy(rhs);
+
+        sandbox().enter();
     }
 
     inline Message(Message &&rhs) {
+        sandbox().exit();
+
         _move(rhs);
         rhs._invalidate();
+
+        sandbox().enter();
     }
 
     inline ~Message() {
+        sandbox().exit();
+
         _dispose();
         _invalidate();
+
+        sandbox().enter();
     }
 
     inline Message & operator=(const Message &rhs) {
+        sandbox().exit();
+
         if (this != &rhs) {
             _dispose();
             _copy(rhs);
         }
 
+        sandbox().enter();
         return *this;
     }
 
     inline Message & operator=(Message &&rhs) {
+        sandbox().exit();
+
         if (this != &rhs) {
             _dispose();
             _move(rhs);
             rhs._invalidate();
         }
 
+        sandbox().enter();
         return *this;
     }
 
@@ -106,30 +129,46 @@ public:
     }
 
     inline Message & put(const void *data, size_t len) {
+        sandbox().exit();
+
         _fit(len);
         memcpy(_buf, data, len);
         _buf += len;
+
+        sandbox().enter();
         return *this;
     }
 
     template <typename T>
     inline Message & operator<<(const T &x) {
+        sandbox().exit();
+
         _fit(sizeof(T));
         *((T *) _buf) = x;
         _buf += sizeof(T);
+
+        sandbox().enter();
         return *this;
     }
 
     inline void * get(void *data, size_t len) {
+        sandbox().exit();
+
         memcpy(data, _buf, len);
         _buf += len;
+
+        sandbox().enter();
         return data;
     }
 
     template <typename T>
     inline Message & operator>>(T &x) {
+        sandbox().exit();
+
         x = *((T *) _buf);
         _buf += sizeof(T);
+
+        sandbox().enter();
         return *this;
     }
 
@@ -149,7 +188,7 @@ public:
         for (size_t i = 0; i < sz; ++i) {
             operator>><T>(x[i]);
         }
-        return x;
+        return *this;
     }
 };
 
