@@ -72,3 +72,15 @@ dunit("distributed-unit-test", "worker-mem-leak")
     assert(true);
 })
 .expect(Status::PASS_WITH_MEMORY_LEAK);
+
+dunit("distributed-unit-test", "wait-notify")
+.dependsOn("unit-test")
+.workers(4)
+.driver([] {
+    notify();
+    wait(4);
+})
+.worker([] {
+    wait();
+    notify();
+});
