@@ -11,15 +11,18 @@ void Message::send(Socket &socket) {
 Message & Message::recv(Socket &socket) {
     size_t len;
     size_t r = socket.recv(&len, sizeof(size_t), true);
-    if (r == -1u || (r != 0 && r != sizeof(size_t))) throw std::runtime_error("Failed to receive");
-    if (r != 0) return *this;
-    len -= sizeof(size_t);
+    if (r == 0) {
+        len -= sizeof(size_t);
 
-    _fit(len);
-    r = socket.recv(_buf, len);
-    if (r == -1u) throw std::runtime_error("Failed to receive");
+        _fit(len);
+        r = socket.recv(_buf, len);
+        if (r == -1u) throw std::runtime_error("Failed to receive");
 
-    _hasData = true;
+        _hasData = true;
+    }
+    else if (r == -1lu || r != sizeof(size_t)) {
+        throw std::runtime_error("Failed to receive");
+    }
 
     return *this;
 }

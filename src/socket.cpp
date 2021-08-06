@@ -192,7 +192,7 @@ size_t Socket::recv(void *data, size_t len, bool returnOnBlock) {
     while (len > 0) {
         ssize_t recvd = sys::recv(_fd, data, len < maxLen ? len : maxLen, 0);
         if (recvd == 0) {
-            return -1u;
+            return -1lu;
         }
         else if (recvd != -1) {
             len -= recvd;
