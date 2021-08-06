@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <memory_watch.h>
 #include <lazy.h>
+#include <message.h>
 
 namespace dtest {
 
@@ -166,6 +167,12 @@ private:
 public:
     virtual ~Context() = default;
 
+    virtual Message createUserMessage() = 0;
+
+    virtual void sendUserMessage(Message &message) = 0;
+
+    virtual Message getUserMessage() = 0;
+
     virtual void notify() = 0;
 
     virtual void wait(uint32_t n = -1u) = 0;
@@ -179,6 +186,7 @@ class DriverContext : public Context {
 
     friend class Test;
     friend class WorkerContext;
+    friend class UserMessage;
 
 private:
 
@@ -189,6 +197,7 @@ private:
         FINISHED_TEST,
         NOTIFY,
         TERMINATE,
+        USER_MESSAGE,
     };
 
     struct WorkerHandle {
@@ -251,7 +260,7 @@ private:
 
     std::unordered_map<uint32_t, WorkerHandle> _workers;
     std::unordered_map<uint32_t, WorkerHandle> _allocatedWorkers;
-
+    std::list<Message> _userMessages;
     Socket _socket;
 
     DriverContext() = default;
@@ -272,6 +281,12 @@ private:
 
 public:
 
+    Message createUserMessage() override;
+
+    void sendUserMessage(Message &message) override;
+
+    Message getUserMessage() override;
+
     void notify() override;
 
     void wait(uint32_t n = -1u) override;
@@ -289,15 +304,11 @@ class WorkerContext : public Context {
 private:
 
     uint32_t _id = -1;
-
     uint32_t _notifyCount = 0;
-
+    std::list<Message> _userMessages;
     Socket _socket;
-
     Socket _driverSocket;
-
     std::unordered_map<std::string, Test *> _tests;
-
     bool _inTest = false;
 
     void _start(uint32_t id);
@@ -305,6 +316,12 @@ private:
     void _waitForEvent();
 
 public:
+
+    Message createUserMessage() override;
+
+    void sendUserMessage(Message &message) override;
+
+    Message getUserMessage() override;
 
     void notify() override;
 

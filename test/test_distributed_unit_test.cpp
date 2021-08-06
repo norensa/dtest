@@ -84,3 +84,41 @@ dunit("distributed-unit-test", "wait-notify")
     wait();
     notify();
 });
+
+dunit("distributed-unit-test", "user-message")
+.dependsOn("unit-test")
+.workers(4)
+.driver([] {dunit("distributed-unit-test", "user-message")
+.dependsOn("unit-test")
+.workers(4)
+.driver([] {
+    int x;
+    x = 1;
+    sendMsg(x);
+    for (auto i = 0; i < 4; ++i) {
+        recvMsg() >> x;
+        assert (x == 2);
+    }
+})
+.worker([] {
+    int x;
+    recvMsg() >> x;
+    assert (x == 1);
+    x = 2;
+    sendMsg(x);
+});
+    int x;
+    x = 1;
+    sendMsg(x);
+    for (auto i = 0; i < 4; ++i) {
+        recvMsg() >> x;
+        assert (x == 2);
+    }
+})
+.worker([] {
+    int x;
+    recvMsg() >> x;
+    assert (x == 1);
+    x = 2;
+    sendMsg(x);
+});

@@ -36,3 +36,6 @@ using Status = dtest::Test::Status;
 
 #define __wait(_1, NAME, ...) NAME
 #define wait(...)  __wait(__VA_ARGS__, __wait_1, __wait_0, UNUSED)(__VA_ARGS__)
+
+#define sendMsg(m) dtest::Context::instance()->sendUserMessage(dtest::Context::instance()->createUserMessage() << m)
+#define recvMsg() dtest::Context::instance()->getUserMessage()

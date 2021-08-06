@@ -3,7 +3,6 @@
 #include <sstream>
 #include <algorithm>
 #include <sys/wait.h>
-#include <message.h>
 #include <util.h>
 
 using namespace dtest;
@@ -302,13 +301,12 @@ uint32_t DriverContext::_waitForEvent() {
         Message m;
         try {
             m.recv(conn);
+            if (! m.hasData()) continue;
         }
         catch (...) {
             _socket.dispose(conn);
             continue;
         }
-
-        if (! m.hasData()) continue;
 
         OpCode op;
         uint32_t id;
@@ -335,6 +333,11 @@ uint32_t DriverContext::_waitForEvent() {
             auto it = _allocatedWorkers.find(id);
             if (it == _allocatedWorkers.end()) return -1;
             ++it->second._notifyCount;
+        }
+        break;
+
+        case OpCode::USER_MESSAGE: {
+            _userMessages.push_back(std::move(m));
         }
         break;
 
@@ -398,6 +401,41 @@ void DriverContext::_join(Test *test) {
         test->_childStatus.push_back(w.second._status);
         test->_childDetailedReport.push_back(w.second._detailedReport);
     }
+}
+
+Message DriverContext::createUserMessage() {
+    Test::_enter();
+
+    Message m;
+    m << OpCode::USER_MESSAGE;
+
+    Test::_exit();
+
+    return m;
+}
+
+void DriverContext::sendUserMessage(Message &message) {
+    Test::_enter();
+
+    for (auto &w : _allocatedWorkers) {
+        message.send(w.second._socket);
+    }
+
+    Test::_exit();
+}
+
+Message DriverContext::getUserMessage() {
+    Test::_enter();
+
+    while (_userMessages.empty()) {
+        _waitForEvent();
+    }
+    Message m = std::move(_userMessages.front());
+    _userMessages.pop_front();
+
+    Test::_exit();
+
+    return m;
 }
 
 void DriverContext::notify() {
@@ -469,12 +507,12 @@ void WorkerContext::_waitForEvent() {
         Message m;
         try {
             m.recv(conn);
+            if (! m.hasData()) continue;
         }
         catch (...) {
+            _socket.dispose(conn);
             continue;
         }
-
-        if (! m.hasData()) continue;
 
         OpCode op;
         m >> op;
@@ -518,11 +556,49 @@ void WorkerContext::_waitForEvent() {
         }
         break;
 
+        case OpCode::USER_MESSAGE: {
+            _userMessages.push_back(std::move(m));
+        }
+        break;
+
         default: break;
         }
 
         return;
     }
+}
+
+Message WorkerContext::createUserMessage() {
+    Test::_enter();
+
+    Message m;
+    m << OpCode::USER_MESSAGE << _id;
+
+    Test::_exit();
+
+    return m;
+}
+
+void WorkerContext::sendUserMessage(Message &message) {
+    Test::_enter();
+
+    message.send(_driverSocket);
+
+    Test::_exit();
+}
+
+Message WorkerContext::getUserMessage() {
+    Test::_enter();
+
+    while (_userMessages.empty()) {
+        _waitForEvent();
+    }
+    Message m = _userMessages.front();
+    _userMessages.pop_front();
+
+    Test::_exit();
+
+    return m;
 }
 
 void WorkerContext::notify() {
