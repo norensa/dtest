@@ -15,19 +15,45 @@ private:
 
     static const size_t _DEFAULT_BUFFER_SIZE = 1024;
 
-    void *_allocBuf;
-    size_t _allocLen;
-    uint8_t *_buf;
+    void *_allocBuf = nullptr;
+    size_t _allocLen = 0;
+    uint8_t *_buf = nullptr;
     bool _hasData = false;
 
-    void _fit(size_t sz) {
+    inline void _fit(size_t sz) {
         size_t len = _buf - (uint8_t *) _allocBuf;
         size_t rem = _allocLen - len;
         if (rem < sz) {
             _allocLen += (sz < _DEFAULT_BUFFER_SIZE) ? _DEFAULT_BUFFER_SIZE : sz;
             _allocBuf = realloc(_allocBuf, _allocLen);
-            _buf = ((uint8_t *) _allocBuf) + len;
+            _buf = (uint8_t *) _allocBuf + len;
         }
+    }
+
+    inline void _dispose() {
+        if (_allocBuf != nullptr) free(_allocBuf);
+    }
+
+    inline void _invalidate() {
+        _allocBuf = nullptr;
+        _allocLen = 0;
+        _buf = nullptr;
+        _hasData = false;
+    }
+
+    inline void _move(Message &rhs) {
+        _allocBuf = rhs._allocBuf;
+        _allocLen = rhs._allocLen;
+        _buf = rhs._buf;
+        _hasData = rhs._hasData;
+    }
+
+    inline void _copy(const Message &rhs) {
+        _allocBuf = malloc(rhs._allocLen);
+        memcpy(_allocBuf, rhs._allocBuf, rhs._allocLen);
+        _allocLen = rhs._allocLen;
+        _buf = (uint8_t *) _allocBuf + (rhs._buf - (uint8_t *) rhs._allocBuf);
+        _hasData = rhs._hasData;
     }
 
 public:
@@ -38,17 +64,38 @@ public:
         _buf = (uint8_t *) _allocBuf + sizeof(size_t);
     }
 
-    Message(const Message &) = delete;
-
-    Message(Message &&) = delete;
-
-    inline ~Message() {
-        free(_allocBuf);
+    inline Message(const Message &rhs) {
+        _copy(rhs);
     }
 
-    Message & operator=(const Message &) = delete;
+    inline Message(Message &&rhs) {
+        _move(rhs);
+        rhs._invalidate();
+    }
 
-    Message & operator=(Message &&) = delete;
+    inline ~Message() {
+        _dispose();
+        _invalidate();
+    }
+
+    inline Message & operator=(const Message &rhs) {
+        if (this != &rhs) {
+            _dispose();
+            _copy(rhs);
+        }
+
+        return *this;
+    }
+
+    inline Message & operator=(Message &&rhs) {
+        if (this != &rhs) {
+            _dispose();
+            _move(rhs);
+            rhs._invalidate();
+        }
+
+        return *this;
+    }
 
     void send(Socket &socket);
 
