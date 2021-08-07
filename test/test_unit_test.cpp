@@ -2,7 +2,6 @@
 
 unit("root-test")
 .body([] {
-    assert(true);
 });
 
 unit("unit-test", "pass")
@@ -18,7 +17,6 @@ unit("unit-test", "fail")
 
 unit("unit-test", "timeout")
 .body([] {
-    assert(true);
 })
 .timeoutNanos(0)
 .expect(Status::TIMEOUT);
@@ -26,6 +24,11 @@ unit("unit-test", "timeout")
 unit("unit-test", "mem-leak")
 .body([] {
     malloc(1);
-    assert(true);
 })
 .expect(Status::PASS_WITH_MEMORY_LEAK);
+
+unit("unit-test", "invalid-free")
+.body([] {
+    free((void *) 0xdead);
+})
+.expect(Status::FAIL);
