@@ -14,52 +14,61 @@ void DistributedUnitTest::_configure() {
     }
 }
 
-void DistributedUnitTest::_resourceSnapshot() {
-    UnitTest::_resourceSnapshot();
-
-    _sendSize = sandbox().networkSendSize() - _sendSize;
-    _sendCount = sandbox().networkSendCount() - _sendCount;
-    _recvSize = sandbox().networkReceiveSize() - _recvSize;
-    _recvCount = sandbox().networkReceiveCount() - _recvCount;
-}
-
 void DistributedUnitTest::_workerRun() {
-    // take a snapshot of current resource usage
-    _resourceSnapshot();
+    sandbox().run(
+        [this] {
+            _configure();
 
-    // run
-    _workerBodyTime = _timedRun(_workerBody);
+            sandbox().resourceSnapshot(_usedResources);
+            _status = Status::FAIL;
 
-    // take another snapshot to find the difference
-    _resourceSnapshot();
+            _workerBodyTime = _timedRun(_workerBody);
 
-    // post-run checks
-    _checkMemoryLeak();
-    _checkTimeout(_workerBodyTime);
+            _status = Status::PASS;
+            sandbox().resourceSnapshot(_usedResources);
+        },
+        [this] (Message &m) {
+            _checkMemoryLeak();
+            _checkTimeout(_bodyTime);
 
-    // clear any leaked memory blocks
-    sandbox().clearMemoryBlocks();
+            m << _status
+                << _usedResources
+                << _errors
+                << _workerBodyTime;
+        },
+        [this] (Message &m) {
+            m >> _status
+                >> _usedResources
+                >> _errors
+                >> _workerBodyTime;
+        },
+        [this] (const std::string &error) {
+            _status = Status::FAIL;
+            _errors.push_back(error);
+        }
+    );
 }
 
 bool DistributedUnitTest::_hasNetworkReport() {
-    return _sendCount > 0 || _recvCount > 0;
+    return _usedResources.network.send.count > 0
+    || _usedResources.network.receive.count > 0;
 }
 
 std::string DistributedUnitTest::_networkReport() {
     std::stringstream s;
 
-    if (_sendCount > 0) {
+    if (_usedResources.network.send.count > 0) {
         s << "\"send\": {";
-        s << "\n  \"size\": " << _sendSize;
-        s << ",\n  \"count\": " << _sendCount;
+        s << "\n  \"size\": " << _usedResources.network.send.size;
+        s << ",\n  \"count\": " << _usedResources.network.send.count;
         s << "\n}";
-        if (_recvCount > 0) s << ",\n";
+        if (_usedResources.network.receive.count > 0) s << ",\n";
     }
 
-    if (_recvCount > 0) {
+    if (_usedResources.network.receive.count > 0) {
         s << "\"receive\": {";
-        s << "\n  \"size\": " << _recvSize;
-        s << ",\n  \"count\": " << _recvCount;
+        s << "\n  \"size\": " << _usedResources.network.receive.size;
+        s << ",\n  \"count\": " << _usedResources.network.receive.count;
         s << "\n}";
     }
 
@@ -71,8 +80,8 @@ void DistributedUnitTest::_report(bool driver, std::stringstream &s) {
         UnitTest::_report(driver, s);
     }
     else {
-        if (_hasErrors()) {
-           s << _collectErrorMessages() << ",\n";
+        if (! _errors.empty()) {
+           s << _errorReport() << ",\n";
         }
 
         s << "\"time\": {";

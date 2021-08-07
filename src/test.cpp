@@ -10,6 +10,8 @@ using namespace dtest;
 
 void Test::_run() {
 
+    Context::instance()->_currentTest = this;
+
     if (_isDriver) {
         if (_distributed()) {
             if (_numWorkers == 0) _numWorkers = _defaultNumWorkers;
@@ -55,28 +57,24 @@ static std::string __statusStringPastTense[] = {
 
 std::unordered_map<std::string, std::list<Test *>> Test::__tests;
 
-std::list<std::string> Test::__err;
-
 bool Test::_logStatsToStderr = false;
 
 bool Test::_isDriver = false;
 
 uint16_t Test::_defaultNumWorkers = 4;
 
-std::string Test::_collectErrorMessages() {
+std::string Test::_errorReport() {
     std::stringstream s;
 
-    if (__err.size() > 0) {
+    if (! _errors.empty()) {
         s << "\"errors\": [";
 
         size_t i = 0;
-        for (const auto &e : __err) {
+        for (const auto &e : _errors) {
             if (i++ > 0) s << ",";
             s << "\n"<< indent(jsonify(e), 2);
         }
         s << "\n]";
-
-        __err.clear();
     }
 
     return s.str();

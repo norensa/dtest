@@ -19,6 +19,7 @@ namespace dtest {
 
 class Test {
 
+    friend class Context;
     friend class DriverContext;
     friend class WorkerContext;
 
@@ -48,7 +49,12 @@ protected:
     std::string _detailedReport = "";
     std::vector<std::string> _childDetailedReport;
 
+    ResourceSnapshot _usedResources;
+    std::list<std::string> _errors;
+
     uint16_t _numWorkers = 0;
+
+    std::string _errorReport();
 
     virtual bool _distributed() const {
         return false;
@@ -118,32 +124,16 @@ private:
 
     static std::unordered_map<std::string, std::list<Test *>> __tests;
 
-    static std::list<std::string> __err;
-
     static bool _logStatsToStderr;
 
     static bool _isDriver;
 
     static uint16_t _defaultNumWorkers;
 
-protected:
-
-    static inline bool _hasErrors() {
-        return ! __err.empty();
-    }
-
-    static std::string _collectErrorMessages();
-
 public:
 
     static inline const std::string & statusString(const Status &status) {
         return __statusString[(uint32_t) status];
-    }
-
-    static inline void logError(const std::string &message) {
-        sandbox().exit();
-        __err.push_back(message);
-        sandbox().enter();
     }
 
     static inline void logStatsToStderr(bool val) {
@@ -161,8 +151,18 @@ class Context {
 private:
     static Context *_currentCtx;
 
+protected: 
+
+    Test *_currentTest;
+
 public:
     virtual ~Context() = default;
+
+    inline void logError(const std::string &message) {
+        sandbox().exit();
+        _currentTest->_errors.push_back(message);
+        sandbox().enter();
+    }
 
     virtual Message createUserMessage() = 0;
 
@@ -327,28 +327,22 @@ public:
     static Lazy<WorkerContext> instance;
 };
 
-struct AssertionException {
-    std::string msg;
-
-    inline AssertionException(const std::string &msg)
-    : msg(msg)
-    { }
-};
-
-inline void __assertionFailure(const char *expr, const char *file, int line, const char *caller) {
-    sandbox().exit();
-
-    throw AssertionException(
+class AssertionException : public SandboxException {
+public:
+    inline AssertionException(const char *expr, const char *file, int line, const char *caller)
+    : SandboxException(
         std::string("Assertion failed for expression '") + expr +
         "' in file " + file + ":" + std::to_string(line) + " " + caller
-    );
-}
+      )
+    { }
+};
 
 }  // end namespace dtest
 
 #define assert(expr) \
     if (! static_cast<bool>(expr)) { \
-        dtest::__assertionFailure(#expr, __FILE__, __LINE__, __PRETTY_FUNCTION__); \
+        dtest::sandbox().exit(); \
+        throw dtest::AssertionException(#expr, __FILE__, __LINE__, __PRETTY_FUNCTION__); \
     }
 
-#define err(msg) dtest::Test::logError(msg)
+#define err(msg) dtest::Context::instance()->logError(msg)

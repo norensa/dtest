@@ -12,11 +12,6 @@ protected:
 
     uint64_t _workerBodyTime = 0;
 
-    size_t _sendSize = 0;
-    size_t _sendCount = 0;
-    size_t _recvSize = 0;
-    size_t _recvCount = 0;
-
     bool _faultyNetwork = false;
     double _faultyNetworkChance = 1;
     uint64_t _faultyNetworkHoleDuration = 0;
@@ -26,8 +21,6 @@ protected:
     }
 
     void _configure() override;
-
-    void _resourceSnapshot() override;
 
     void _workerRun() override;
 

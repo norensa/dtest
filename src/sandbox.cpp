@@ -1,5 +1,7 @@
 #include <sandbox.h>
 #include <dlfcn.h>
+#include <unistd.h>
+#include <sys/wait.h>
 
 using namespace dtest;
 
@@ -21,6 +23,125 @@ void Sandbox::exit() {
     }
     ++_counter;
     _mtx.unlock();
+}
+
+void Sandbox::run(
+    const std::function<void()> &func,
+    const std::function<void(Message &)> &onComplete,
+    const std::function<void(Message &)> &onSuccess,
+    const std::function<void(const std::string &)> &onError
+) {
+
+    enum class MessageCode : uint8_t {
+        COMPLETE,
+        ERROR,
+    };
+
+    Socket serverSocket = Socket(0, 128);
+    pid_t pid = fork();
+
+    if (pid == 0) {
+        Socket clientSocket = Socket(serverSocket.address());
+
+        try {
+            enter();
+            func();
+            exit();
+
+            Message m;
+            m << MessageCode::COMPLETE;
+            onComplete(m);
+            m.send(clientSocket);
+        }
+        catch (const SandboxException &e) {
+            // exit() is invoked internally
+            Message m;
+            m << MessageCode::ERROR << std::string(e.what());
+            m.send(clientSocket);
+        }
+        catch (const std::exception &e) {
+            exit();
+            Message m;
+            m << MessageCode::ERROR << std::string("Detected uncaught exception: ") + e.what();
+            m.send(clientSocket);
+        }
+        catch (...) {
+            exit();
+            Message m;
+            m << MessageCode::ERROR << std::string("Unknown exception thrown");
+            m.send(clientSocket);
+        }
+
+        clientSocket.close();
+
+        // clear any leaked memory blocks
+        clearMemoryBlocks();
+
+        ::exit(0);
+    }
+    else {
+        bool done = false;
+        while (! done) {
+            auto conn = serverSocket.pollOrAcceptOrTimeout();
+            if (conn == nullptr) {
+                int exitStatus;
+                if (waitpid(pid, &exitStatus, WNOHANG) == 0) {
+                    onError("Terminated unexpectedly with exit code " + std::to_string(exitStatus));
+                    done = true;
+                }
+                continue;
+            }
+
+            Message m;
+            try {
+                m.recv(*conn);
+                if (! m.hasData()) continue;
+            }
+            catch (...) {
+                serverSocket.dispose(*conn);
+                continue;
+            }
+
+            MessageCode code;
+            m >> code;
+
+            switch (code) {
+            case MessageCode::COMPLETE: {
+                onSuccess(m);
+                done = true;
+            }
+            break;
+
+            case MessageCode::ERROR: {
+                std::string reason;
+                m >> reason;
+                onError(reason);
+                done = true;
+            }
+            break;
+
+            default: break;
+            }
+
+            waitpid(pid, NULL, 0);
+        }
+    }
+
+    serverSocket.close();
+}
+
+void Sandbox::resourceSnapshot(ResourceSnapshot &snapshot) {
+    snapshot.memory.allocate.size = _memory._allocateSize - snapshot.memory.allocate.size;
+    snapshot.memory.allocate.count = _memory._allocateCount - snapshot.memory.allocate.count;
+
+    snapshot.memory.deallocate.size = _memory._freeSize - snapshot.memory.deallocate.size;
+    snapshot.memory.deallocate.count = _memory._freeCount - snapshot.memory.deallocate.count;
+
+    snapshot.network.send.size = _network._sendSize - snapshot.network.send.size;
+    snapshot.network.send.count = _network._sendCount - snapshot.network.send.count;
+
+    snapshot.network.receive.size = _network._recvSize - snapshot.network.receive.size;
+    snapshot.network.receive.count = _network._recvCount - snapshot.network.receive.count;
 }
 
 static Sandbox instance;

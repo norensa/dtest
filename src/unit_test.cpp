@@ -1,5 +1,6 @@
 #include <unit_test.h>
 #include <util.h>
+#include <chrono>
 
 using namespace dtest;
 
@@ -8,43 +9,9 @@ void UnitTest::_configure() {
 }
 
 uint64_t UnitTest::_timedRun(const std::function<void()> &func) {
-
-    _configure();
-
     auto start = std::chrono::high_resolution_clock::now();
 
-    if (func) {
-        try {
-            _status = Status::FAIL;
-
-            sandbox().enter();
-            func();
-            sandbox().exit();
-
-            _status = Status::PASS;
-        }
-        catch (const SandboxFatalException &e) {
-            // sandbox().exit() is invoked internally
-            err(
-                std::string("Detected fatal error: ") + e.what()
-                + ". Caused by:\n" + indent(e.callstack().toString(), 2)
-            );
-        }
-        catch (const AssertionException &e) {
-            // sandbox().exit() is invoked internally
-            err(e.msg);
-        }
-        catch (const std::exception &e) {
-            sandbox().exit();
-            err(
-                std::string("Detected uncaught exception: ") + e.what()
-            );
-        }
-        catch (...) {
-            sandbox().exit();
-            err("Unknown exception thrown");
-        }
-    }
+    if (func) func();
 
     auto end = std::chrono::high_resolution_clock::now();
     if (! func) end = start;
@@ -52,72 +19,89 @@ uint64_t UnitTest::_timedRun(const std::function<void()> &func) {
     return (end - start).count();
 }
 
-void UnitTest::_resourceSnapshot() {
-    _memoryLeak = sandbox().usedMemory() - _memoryLeak;
-    _memoryAllocated = sandbox().allocatedMemorySize() - _memoryAllocated;
-    _memoryFreed = sandbox().freedMemorySize() - _memoryFreed;
-    _blocksAllocated = sandbox().allocatedMemoryBlocks() - _blocksAllocated;
-    _blocksDeallocated = sandbox().freedMemoryBlocks() - _blocksDeallocated;
-}
-
 void UnitTest::_checkMemoryLeak() {
-    if (_status == Status::PASS && _memoryLeak > 0 && ! _ignoreMemoryLeak) {
+    if (
+        ! _ignoreMemoryLeak
+        && _usedResources.memory.allocate.size > _usedResources.memory.deallocate.size
+    ) {
         _status = Status::PASS_WITH_MEMORY_LEAK;
         err(
             "WARNING: Possible memory leak detected. "
-            + formatSize(_memoryLeak) + " ("
-            + std::to_string(_blocksAllocated - _blocksDeallocated)
+            + formatSize(_usedResources.memory.allocate.size - _usedResources.memory.deallocate.size) + " ("
+            + std::to_string(_usedResources.memory.allocate.count - _usedResources.memory.deallocate.count)
             + " block(s)) difference." + sandbox().memoryReport()
         );
     }
 }
 
 void UnitTest::_checkTimeout(uint64_t time) {
-    if (_status == Status::PASS && time > _timeout) {
+    if (time > _timeout) {
         _status = Status::TIMEOUT;
         err("Exceeded timeout of " + formatDuration(_timeout));
     }
 }
 
 void UnitTest::_driverRun() {
-    // take a snapshot of current resource usage
-    _resourceSnapshot();
+    sandbox().run(
+        [this] {
+            _configure();
 
-    // run
-    _initTime = _timedRun(_onInit);
-    _bodyTime = _timedRun(_body);
-    _completeTime = _timedRun(_onComplete);
+            sandbox().resourceSnapshot(_usedResources);
+            _status = Status::FAIL;
 
-    // take another snapshot to find the difference
-    _resourceSnapshot();
+            _initTime = _timedRun(_onInit);
+            _bodyTime = _timedRun(_body);
+            _completeTime = _timedRun(_onComplete);
 
-    // post-run checks
-    _checkMemoryLeak();
-    _checkTimeout(_bodyTime);
+            _status = Status::PASS;
+            sandbox().resourceSnapshot(_usedResources);
+        },
+        [this] (Message &m) {
+            _checkMemoryLeak();
+            _checkTimeout(_bodyTime);
 
-    // clear any leaked memory blocks
-    sandbox().clearMemoryBlocks();
+            m << _status
+                << _usedResources
+                << _errors
+                << _initTime
+                << _bodyTime
+                << _completeTime;
+        },
+        [this] (Message &m) {
+            m >> _status
+                >> _usedResources
+                >> _errors
+                >> _initTime
+                >> _bodyTime
+                >> _completeTime;
+        },
+        [this] (const std::string &error) {
+            _status = Status::FAIL;
+            _errors.push_back(error);
+        }
+    );
 }
 
 bool UnitTest::_hasMemoryReport() {
-    return _blocksAllocated > 0 || _blocksDeallocated > 0;
+    return _usedResources.memory.allocate.count > 0
+    || _usedResources.memory.deallocate.count > 0;
 }
 
 std::string UnitTest::_memoryReport() {
     std::stringstream s;
 
-    if (_blocksAllocated > 0) {
+    if (_usedResources.memory.allocate.count > 0) {
         s << "\"allocated\": {";
-        s << "\n  \"size\": " << _memoryAllocated;
-        s << ",\n  \"blocks\": " << _blocksAllocated;
+        s << "\n  \"size\": " << _usedResources.memory.allocate.size;
+        s << ",\n  \"blocks\": " << _usedResources.memory.allocate.count;
         s << "\n}";
-        if (_blocksDeallocated > 0) s << ",\n";
+        if (_usedResources.memory.deallocate.count > 0) s << ",\n";
     }
 
-    if (_blocksDeallocated > 0) {
+    if (_usedResources.memory.deallocate.count > 0) {
         s << "\"freed\": {";
-        s << "\n  \"size\": " << _memoryFreed;
-        s << ",\n  \"blocks\": " << _blocksDeallocated;
+        s << "\n  \"size\": " << _usedResources.memory.deallocate.size;
+        s << ",\n  \"blocks\": " << _usedResources.memory.deallocate.count;
         s << "\n}";
     }
 
@@ -125,8 +109,8 @@ std::string UnitTest::_memoryReport() {
 }
 
 void UnitTest::_report(bool driver, std::stringstream &s) {
-    if (_hasErrors()) {
-        s << _collectErrorMessages() << ",\n";
+    if (! _errors.empty()) {
+        s << _errorReport() << ",\n";
     }
 
     s << "\"time\": {";

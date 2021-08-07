@@ -6,8 +6,27 @@
 #include <memory.h>
 #include <sys/socket.h>
 #include <network.h>
+#include <functional>
+#include <message.h>
 
 namespace dtest {
+
+struct ResourceSnapshot {
+    struct Quantity {
+        size_t size;
+        size_t count;
+    };
+
+    struct {
+        Quantity allocate;
+        Quantity deallocate;
+    } memory;
+
+    struct {
+        Quantity send;
+        Quantity receive;
+    } network;
+};
 
 class Sandbox {
 
@@ -38,25 +57,14 @@ public:
 
     void exit();
 
-    inline size_t allocatedMemorySize() {
-        return _memory._allocateSize;
-    }
+    void run(
+        const std::function<void()> &func,
+        const std::function<void(Message &)> &onComplete,
+        const std::function<void(Message &)> &onSuccess,
+        const std::function<void(const std::string &)> &onError
+    );
 
-    inline size_t freedMemorySize() {
-        return _memory._freeSize;
-    }
-
-    inline size_t allocatedMemoryBlocks() {
-        return _memory._allocateCount;
-    }
-
-    inline size_t freedMemoryBlocks() {
-        return _memory._freeCount;
-    }
-
-    inline size_t usedMemory() {
-        return _memory._allocateSize - _memory._freeSize;
-    }
+    void resourceSnapshot(ResourceSnapshot &snapshot);
 
     inline std::string memoryReport() {
         return _memory.report();
@@ -64,22 +72,6 @@ public:
 
     inline void clearMemoryBlocks() {
         _memory.clear();
-    }
-
-    inline size_t networkSendSize() {
-        return _network._sendSize;
-    }
-
-    inline size_t networkSendCount() {
-        return _network._sendCount;
-    }
-
-    inline size_t networkReceiveSize() {
-        return _network._recvSize;
-    }
-
-    inline size_t networkReceiveCount() {
-        return _network._recvCount;
     }
 
     inline void enableFaultyNetwork(double chance, uint64_t duration) {
@@ -139,24 +131,13 @@ enum class FatalError : uint16_t {
 };
 
 class SandboxFatalException : public SandboxException {
-private:
-    FatalError _code;
-    CallStack _callstack;
-
 public:
     inline SandboxFatalException(FatalError code, const std::string &msg, int stackSkip)
-    : SandboxException(msg),
-      _code(code),
-      _callstack(CallStack::trace(1 + stackSkip))
+    : SandboxException(
+        std::string("Detected fatal error: ") + msg
+        + ". Caused by:\n" + CallStack::trace(1 + stackSkip).toString()
+      )
     { }
-
-    inline FatalError code() const noexcept {
-        return _code;
-    }
-
-    inline const CallStack & callstack() const noexcept {
-        return _callstack;
-    }
 };
 
 }  // end namespace dtest

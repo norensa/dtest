@@ -2,8 +2,6 @@
 
 #include <test.h>
 
-#include <chrono>
-
 namespace dtest {
 
 class UnitTest : public Test {
@@ -24,18 +22,9 @@ protected:
     uint64_t _bodyTime = 0;
     uint64_t _completeTime = 0;
 
-    // memory
-    size_t _memoryLeak = 0;
-    size_t _memoryAllocated = 0;
-    size_t _memoryFreed = 0;
-    size_t _blocksAllocated = 0;
-    size_t _blocksDeallocated = 0;
-
     virtual void _configure();
 
     uint64_t _timedRun(const std::function<void()> &func);
-
-    virtual void _resourceSnapshot();
 
     void _checkMemoryLeak();
 
