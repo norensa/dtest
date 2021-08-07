@@ -35,6 +35,7 @@ void Sandbox::run(
     enum class MessageCode : uint8_t {
         COMPLETE,
         ERROR,
+        OK,
     };
 
     Socket serverSocket = Socket(0, 128);
@@ -72,12 +73,17 @@ void Sandbox::run(
             m.send(clientSocket);
         }
 
+        Message reply;
+        reply.recv(clientSocket);
+        MessageCode code;
+        reply >> code;
+
         clientSocket.close();
 
         // clear any leaked memory blocks
         clearMemoryBlocks();
 
-        ::exit(0);
+        ::exit((code == MessageCode::OK) ? 0 : 1);
     }
     else {
         bool done = false;
@@ -101,6 +107,10 @@ void Sandbox::run(
                 serverSocket.dispose(*conn);
                 continue;
             }
+
+            Message reply;
+            reply << MessageCode::OK;
+            reply.send(*conn);
 
             MessageCode code;
             m >> code;
