@@ -31,17 +31,23 @@ protected:
     size_t _blocksAllocated = 0;
     size_t _blocksDeallocated = 0;
 
+    virtual void _configure();
+
     uint64_t _timedRun(const std::function<void()> &func);
 
-    void _resourceSnapshot();
+    virtual void _resourceSnapshot();
 
     void _checkMemoryLeak();
 
     void _checkTimeout(uint64_t time);
 
+    void _driverRun() override;
+
+    bool _hasMemoryReport();
+
     std::string _memoryReport();
 
-    void _driverRun() override;
+    void _report(bool driver, std::stringstream &s) override;
 
 public:
 

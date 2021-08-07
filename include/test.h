@@ -13,6 +13,7 @@
 #include <sandbox.h>
 #include <lazy.h>
 #include <message.h>
+#include <sstream>
 
 namespace dtest {
 
@@ -58,6 +59,8 @@ protected:
     virtual void _workerRun() {
         // do nothing
     }
+
+    virtual void _report(bool driver, std::stringstream &s) = 0;
 
 private:
 

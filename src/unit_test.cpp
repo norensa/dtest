@@ -1,10 +1,15 @@
 #include <unit_test.h>
 #include <util.h>
-#include <sstream>
 
 using namespace dtest;
 
+void UnitTest::_configure() {
+    sandbox().disableFaultyNetwork();
+}
+
 uint64_t UnitTest::_timedRun(const std::function<void()> &func) {
+
+    _configure();
 
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -74,21 +79,6 @@ void UnitTest::_checkTimeout(uint64_t time) {
     }
 }
 
-std::string UnitTest::_memoryReport() {
-    std::stringstream s;
-
-    s << "\"allocated\": {";
-    s << "\n  \"size\": " << _memoryAllocated;
-    s << ",\n  \"blocks\": " << _blocksAllocated;
-    s << "\n},";
-    s << "\n\"freed\": {";
-    s << "\n  \"size\": " << _memoryFreed;
-    s << ",\n  \"blocks\": " << _blocksDeallocated;
-    s << "\n}";
-
-    return s.str();
-}
-
 void UnitTest::_driverRun() {
     // take a snapshot of current resource usage
     _resourceSnapshot();
@@ -107,15 +97,49 @@ void UnitTest::_driverRun() {
 
     // clear any leaked memory blocks
     sandbox().clearMemoryBlocks();
+}
 
-    // generate report
+bool UnitTest::_hasMemoryReport() {
+    return _blocksAllocated > 0 || _blocksDeallocated > 0;
+}
+
+std::string UnitTest::_memoryReport() {
     std::stringstream s;
-    if (_hasErrors()) s << _collectErrorMessages() << ",\n";
+
+    if (_blocksAllocated > 0) {
+        s << "\"allocated\": {";
+        s << "\n  \"size\": " << _memoryAllocated;
+        s << ",\n  \"blocks\": " << _blocksAllocated;
+        s << "\n}";
+        if (_blocksDeallocated > 0) s << ",\n";
+    }
+
+    if (_blocksDeallocated > 0) {
+        s << "\"freed\": {";
+        s << "\n  \"size\": " << _memoryFreed;
+        s << ",\n  \"blocks\": " << _blocksDeallocated;
+        s << "\n}";
+    }
+
+    return s.str();
+}
+
+void UnitTest::_report(bool driver, std::stringstream &s) {
+    if (_hasErrors()) {
+        s << _collectErrorMessages() << ",\n";
+    }
+
     s << "\"time\": {";
-    s << "\n  \"initialization\": " << formatDurationJSON(_initTime);
-    s << ",\n  \"body\": " << formatDurationJSON(_bodyTime);
-    s << ",\n  \"cleanup\": " << formatDurationJSON(_completeTime);
-    s << "\n},";
-    s << "\n\"memory\": {\n" << indent(_memoryReport(), 2) << "\n}";
-    _detailedReport = s.str();
+    if (_initTime > 0) {
+        s << "\n  \"initialization\": " << formatDurationJSON(_initTime) << ',';
+    }
+    s << "\n  \"body\": " << formatDurationJSON(_bodyTime);
+    if (_completeTime) {
+        s << ",\n  \"cleanup\": " << formatDurationJSON(_completeTime);
+    }
+    s << "\n}";
+
+    if (_hasMemoryReport()) {
+        s << ",\n\"memory\": {\n" << indent(_memoryReport(), 2) << "\n}";
+    }
 }

@@ -45,7 +45,7 @@ public:
 
     Memory();
 
-    inline void trackAllocations(bool val) {
+    inline void trackActivity(bool val) {
         _track = val;
     }
 

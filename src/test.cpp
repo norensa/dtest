@@ -1,6 +1,5 @@
 #include <test.h>
 
-#include <sstream>
 #include <algorithm>
 #include <sys/wait.h>
 #include <util.h>
@@ -32,6 +31,10 @@ void Test::_run() {
     }
 
     _success = _status == _expectedStatus;
+
+    std::stringstream s;
+    _report(_isDriver, s);
+    _detailedReport = s.str();
 }
 
 std::string Test::__statusString[] = {

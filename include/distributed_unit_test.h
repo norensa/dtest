@@ -12,11 +12,30 @@ protected:
 
     uint64_t _workerBodyTime = 0;
 
+    size_t _sendSize = 0;
+    size_t _sendCount = 0;
+    size_t _recvSize = 0;
+    size_t _recvCount = 0;
+
+    bool _faultyNetwork = false;
+    double _faultyNetworkChance = 1;
+    uint64_t _faultyNetworkHoleDuration = 0;
+
     bool _distributed() const override {
         return true;
     }
 
+    void _configure() override;
+
+    void _resourceSnapshot() override;
+
     void _workerRun() override;
+
+    bool _hasNetworkReport();
+
+    std::string _networkReport();
+
+    void _report(bool driver, std::stringstream &s) override;
 
 public:
 
@@ -101,6 +120,13 @@ public:
 
     inline DistributedUnitTest & workers(uint16_t numWorkers) {
         _numWorkers = numWorkers;
+        return *this;
+    }
+
+    inline DistributedUnitTest & faultyNetwork(double chance = 0.9, uint64_t holeDurationMillis = 10) {
+        _faultyNetwork = true;
+        _faultyNetworkChance = chance;
+        _faultyNetworkHoleDuration = holeDurationMillis * 1e6;
         return *this;
     }
 };
