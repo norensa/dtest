@@ -4,7 +4,6 @@
 #include <cstring>
 #include <cstdlib>
 #include <socket.h>
-#include <sandbox.h>
 
 #include <string>
 #include <vector>
@@ -20,6 +19,10 @@ private:
     size_t _allocLen = 0;
     uint8_t *_buf = nullptr;
     bool _hasData = false;
+
+    void _enter();
+
+    void _exit();
 
     inline void _fit(size_t sz) {
         size_t len = _buf - (uint8_t *) _allocBuf;
@@ -60,55 +63,55 @@ private:
 public:
 
     inline Message(size_t len = _DEFAULT_BUFFER_SIZE) {
-        sandbox().exit();
+        _enter();
 
         _allocBuf = malloc(len);
         _allocLen = len;
         _buf = (uint8_t *) _allocBuf + sizeof(size_t);
 
-        sandbox().enter();
+        _exit();
     }
 
     inline Message(const Message &rhs) {
-        sandbox().exit();
+        _enter();
 
         _copy(rhs);
 
-        sandbox().enter();
+        _exit();
     }
 
     inline Message(Message &&rhs) {
-        sandbox().exit();
+        _enter();
 
         _move(rhs);
         rhs._invalidate();
 
-        sandbox().enter();
+        _exit();
     }
 
     inline ~Message() {
-        sandbox().exit();
+        _enter();
 
         _dispose();
         _invalidate();
 
-        sandbox().enter();
+        _exit();
     }
 
     inline Message & operator=(const Message &rhs) {
-        sandbox().exit();
+        _enter();
 
         if (this != &rhs) {
             _dispose();
             _copy(rhs);
         }
 
-        sandbox().enter();
+        _exit();
         return *this;
     }
 
     inline Message & operator=(Message &&rhs) {
-        sandbox().exit();
+        _enter();
 
         if (this != &rhs) {
             _dispose();
@@ -116,7 +119,7 @@ public:
             rhs._invalidate();
         }
 
-        sandbox().enter();
+        _exit();
         return *this;
     }
 
@@ -129,46 +132,46 @@ public:
     }
 
     inline Message & put(const void *data, size_t len) {
-        sandbox().exit();
+        _enter();
 
         _fit(len);
         memcpy(_buf, data, len);
         _buf += len;
 
-        sandbox().enter();
+        _exit();
         return *this;
     }
 
     template <typename T>
     inline Message & operator<<(const T &x) {
-        sandbox().exit();
+        _enter();
 
         _fit(sizeof(T));
         *((T *) _buf) = x;
         _buf += sizeof(T);
 
-        sandbox().enter();
+        _exit();
         return *this;
     }
 
     inline void * get(void *data, size_t len) {
-        sandbox().exit();
+        _enter();
 
         memcpy(data, _buf, len);
         _buf += len;
 
-        sandbox().enter();
+        _exit();
         return data;
     }
 
     template <typename T>
     inline Message & operator>>(T &x) {
-        sandbox().exit();
+        _enter();
 
         x = *((T *) _buf);
         _buf += sizeof(T);
 
-        sandbox().enter();
+        _exit();
         return *this;
     }
 

@@ -1,6 +1,15 @@
 #include <message.h>
+#include <sandbox.h>
 
 using namespace dtest;
+
+void Message::_enter() {
+    sandbox().exit();
+}
+
+void Message::_exit() {
+    sandbox().enter();
+}
 
 void Message::send(Socket &socket) {
     size_t len = _buf - (uint8_t *) _allocBuf;
