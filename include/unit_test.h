@@ -33,6 +33,14 @@ protected:
 
     uint64_t _timedRun(const std::function<void()> &func);
 
+    void _resourceSnapshot();
+
+    void _checkMemoryLeak();
+
+    void _checkTimeout(uint64_t time);
+
+    std::string _memoryReport();
+
     void _driverRun() override;
 
 public:

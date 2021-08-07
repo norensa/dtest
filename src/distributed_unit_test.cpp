@@ -5,57 +5,28 @@
 using namespace dtest;
 
 void DistributedUnitTest::_workerRun() {
-    _memoryLeak = sandbox().usedMemory();
-    _memoryAllocated = sandbox().allocatedMemorySize();
-    _memoryFreed = sandbox().freedMemorySize();
-    _blocksAllocated = sandbox().allocatedMemoryBlocks();
-    _blocksDeallocated = sandbox().freedMemoryBlocks();
+    // take a snapshot of current resource usage
+    _resourceSnapshot();
 
+    // run
     _workerBodyTime = _timedRun(_workerBody);
 
-    if (_status == Status::PASS && _workerBodyTime > _timeout) {
-        err("Exceeded timeout of " + formatDuration(_timeout));
-        _status = Status::TIMEOUT;
-    }
+    // take another snapshot to find the difference
+    _resourceSnapshot();
 
-    std::stringstream rep;
+    // post-run checks
+    _checkMemoryLeak();
+    _checkTimeout(_workerBodyTime);
 
-    _memoryLeak = sandbox().usedMemory() - _memoryLeak;
-    _memoryAllocated = sandbox().allocatedMemorySize() - _memoryAllocated;
-    _memoryFreed = sandbox().freedMemorySize() - _memoryFreed;
-    _blocksAllocated = sandbox().allocatedMemoryBlocks() - _blocksAllocated;
-    _blocksDeallocated = sandbox().freedMemoryBlocks() - _blocksDeallocated;
-
-    if (_status == Status::PASS && _memoryLeak > 0 && ! _ignoreMemoryLeak) {
-        _status = Status::PASS_WITH_MEMORY_LEAK;
-        err(
-            "WARNING: Possible memory leak detected. "
-            + formatSize(_memoryLeak) + " ("
-            + std::to_string(_blocksAllocated - _blocksDeallocated)
-            + " block(s)) difference." + sandbox().memoryReport()
-        );
-    }
-
+    // clear any leaked memory blocks
     sandbox().clearMemoryBlocks();
 
-    if (_hasErrors()) {
-        rep << _collectErrorMessages() << ",\n";
-    }
-
-    rep << "\"time\": {";
-    rep << "\n  \"body\": " << formatDurationJSON(_workerBodyTime);
-    rep << "\n},";
-
-    rep << "\n\"memory\": {";
-    rep << "\n  \"allocated\": {";
-    rep << "\n    \"size\": " << _memoryAllocated;
-    rep << ",\n    \"blocks\": " << _blocksAllocated;
-    rep << "\n  },";
-    rep << "\n  \"freed\": {";
-    rep << "\n    \"size\": " << _memoryFreed;
-    rep << ",\n    \"blocks\": " << _blocksDeallocated;
-    rep << "\n  }";
-    rep << "\n}";
-
-    _detailedReport = rep.str();
+    // generate report
+    std::stringstream s;
+    if (_hasErrors()) s << _collectErrorMessages() << ",\n";
+    s << "\"time\": {";
+    s << "\n  \"body\": " << formatDurationJSON(_workerBodyTime);
+    s << "\n},";
+    s << "\n\"memory\": {\n" << indent(_memoryReport(), 2) << "\n}";
+    _detailedReport = s.str();
 }
