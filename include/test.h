@@ -333,9 +333,11 @@ struct AssertionException {
 };
 
 inline void __assertionFailure(const char *expr, const char *file, int line, const char *caller) {
+    sandbox().exit();
+
     throw AssertionException(
-        std::string("Assertion failed for expression '") + expr + "' "
-        + "in file " + file + ":" + std::to_string(line) + " " + caller
+        std::string("Assertion failed for expression '") + expr +
+        "' in file " + file + ":" + std::to_string(line) + " " + caller
     );
 }
 

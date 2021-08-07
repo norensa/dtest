@@ -111,10 +111,10 @@ private:
     CallStack _callstack;
 
 public:
-    inline SandboxFatalException(FatalError code, const std::string &msg)
+    inline SandboxFatalException(FatalError code, const std::string &msg, int stackSkip)
     : SandboxException(msg),
       _code(code),
-      _callstack(CallStack::trace())
+      _callstack(CallStack::trace(1 + stackSkip))
     { }
 
     inline FatalError code() const noexcept {

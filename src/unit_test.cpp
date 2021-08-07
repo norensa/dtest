@@ -9,34 +9,36 @@ uint64_t UnitTest::_timedRun(const std::function<void()> &func) {
     auto start = std::chrono::high_resolution_clock::now();
 
     if (func) {
-        sandbox().enter();
-
         try {
             _status = Status::FAIL;
 
+            sandbox().enter();
             func();
+            sandbox().exit();
 
             _status = Status::PASS;
         }
-        catch (const AssertionException &e) {
-            err(e.msg);
-        }
         catch (const SandboxFatalException &e) {
+            // sandbox().exit() is invoked internally
             err(
                 std::string("Detected fatal error: ") + e.what()
-                + ". Caused by:\n" + e.callstack().toString()
+                + ". Caused by:\n" + indent(e.callstack().toString(), 2)
             );
         }
+        catch (const AssertionException &e) {
+            // sandbox().exit() is invoked internally
+            err(e.msg);
+        }
         catch (const std::exception &e) {
+            sandbox().exit();
             err(
                 std::string("Detected uncaught exception: ") + e.what()
             );
         }
         catch (...) {
+            sandbox().exit();
             err("Unknown exception thrown");
         }
-
-        sandbox().exit();
     }
 
     auto end = std::chrono::high_resolution_clock::now();
@@ -75,7 +77,7 @@ void UnitTest::_checkTimeout(uint64_t time) {
 std::string UnitTest::_memoryReport() {
     std::stringstream s;
 
-    s << "\n\"allocated\": {";
+    s << "\"allocated\": {";
     s << "\n  \"size\": " << _memoryAllocated;
     s << ",\n  \"blocks\": " << _blocksAllocated;
     s << "\n},";

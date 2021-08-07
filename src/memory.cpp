@@ -30,9 +30,12 @@ void Memory::retrack(void *oldPtr, void *newPtr, size_t newSize) {
     if (it == _blocks.end()) {
         _exit();
 
+        sandbox().exit();
+
         throw SandboxFatalException(
             FatalError::MEMORY_BLOCK_DOES_NOT_EXIST,
-            "Unable to find memory block"
+            "No such allocation",
+            2
         );
     }
 
@@ -53,9 +56,12 @@ void Memory::remove(void *ptr) {
     if (it == _blocks.end()) {
         _exit();
 
+        sandbox().exit();
+
         throw SandboxFatalException(
             FatalError::MEMORY_BLOCK_DOES_NOT_EXIST,
-            "Unable to find memory block"
+            "No such allocation",
+            2
         );
     }
 
@@ -174,7 +180,7 @@ void free(void *__ptr) {
 
     if (__ptr == _calloc_tmp) return;
 
-    if (instance) instance->remove(__ptr);
+    if (__ptr && instance) instance->remove(__ptr);
     libc().free(__ptr);
 }
 
