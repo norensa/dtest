@@ -78,17 +78,17 @@ int main(int argc, char *argv[]) {
     Test::logStatsToStderr(true);
 
     std::fstream logFile;
-    logFile.open("test.log.json", std::ios_base::out | std::ios_base::trunc);
+    logFile.open("dtest.log.json", std::ios_base::out | std::ios_base::trunc);
 
     bool success = Test::runAll(logFile);
     logFile.close();
 
     if (success) {
-        std::cerr << "\nAll tests OK. See test.log.json for more details.\n\n";
+        std::cerr << "\nAll tests OK. See dtest.log.json for more details.\n\n";
         exit(0);
     }
     else {
-        std::cerr << "\nOne or more tests failed. See test.log.json for more details.\n\n";
+        std::cerr << "\nOne or more tests failed. See dtest.log.json for more details.\n\n";
         exit(1);
     }
 }
