@@ -22,10 +22,10 @@ private:
     bool _track = false;
     std::unordered_map<void *, Allocation> _blocks;
 
-    size_t _allocateSize;
-    size_t _freeSize;
-    size_t _allocateCount;
-    size_t _freeCount;
+    size_t _allocateSize = 0;
+    size_t _freeSize = 0;
+    size_t _allocateCount = 0;
+    size_t _freeCount = 0;
 
     static thread_local bool __locked;
     inline bool _enter() {
