@@ -7,6 +7,7 @@
 
 #include <string>
 #include <vector>
+#include <list>
 
 namespace dtest {
 
@@ -190,6 +191,25 @@ public:
         x = std::vector<T>(sz);
         for (size_t i = 0; i < sz; ++i) {
             operator>><T>(x[i]);
+        }
+        return *this;
+    }
+
+    template <typename T>
+    inline Message & operator<<(const std::list<T> &x) {
+        operator<<<size_t>(x.size());
+        for (const auto & xx : x) operator<<<T>(xx);
+        return *this;
+    }
+
+    template <typename T>
+    inline Message & operator>>(std::list<T> &x) {
+        size_t sz; operator>><size_t>(sz);
+        x = std::list<T>();
+        for (size_t i = 0; i < sz; ++i) {
+            T xx;
+            operator>><T>(xx);
+            x.push_back(std::move(xx));
         }
         return *this;
     }
