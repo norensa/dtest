@@ -222,6 +222,7 @@ void Socket::close() {
         conn.second->close();
         delete conn.second;
     }
+    _openConnections.clear();
 }
 
 Socket Socket::accept() {
