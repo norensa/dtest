@@ -37,3 +37,12 @@ unit("unit-test", "error-message")
 .body([] {
     err("error");
 });
+
+unit("unit-test", "random")
+.body([] {
+    double sum = 0;
+    for (auto i = 0; i < 100; ++i) {
+        sum += random();
+    }
+    assert(sum < 100);
+});

@@ -39,3 +39,9 @@ using Status = dtest::Test::Status;
 
 #define sendMsg(m) dtest::Context::instance()->sendUserMessage(dtest::Context::instance()->createUserMessage() << m)
 #define recvMsg() dtest::Context::instance()->getUserMessage()
+
+////
+
+#include <random.h>
+
+#define random() dtest::frand()
