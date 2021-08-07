@@ -87,13 +87,14 @@ bool Test::runAll(std::ostream &out) {
 
     bool success = true;
 
-    std::unordered_map<Status, uint32_t> result;
-
     std::list<Test *> ready;
     std::unordered_map<std::string, std::list<Test *>> blocked;
     std::unordered_map<std::string, std::unordered_set<Test *>> remaining;
+    size_t totalTestCount = 0;
 
     for (const auto &moduleTests : __tests) {
+        totalTestCount += moduleTests.second.size();
+
         for (auto t : moduleTests.second) {
             auto tt = t->copy();
 
@@ -113,16 +114,20 @@ bool Test::runAll(std::ostream &out) {
     if (_logStatsToStderr) std::cerr << std::endl;
 
     out << std::boolalpha;
-
     out << "{\n  \"tests\": [";
 
-    uint32_t count = 0;
+    auto start = std::chrono::high_resolution_clock::now();
+
+    std::unordered_map<Status, uint32_t> expectedStatusSummary;
+    std::unordered_map<Status, uint32_t> unExpectedStatusSummary;
+    size_t runCount = 0;
+    size_t successCount = 0;
     while (! ready.empty()) {
 
         auto test = ready.front();
         ready.pop_front();
 
-        auto testnum = std::to_string(count + 1);
+        auto testnum = std::to_string(runCount + 1);
         testnum.resize(5, ' ');
 
         auto testname = test->_module + "::" + test->_name;
@@ -143,9 +148,9 @@ bool Test::runAll(std::ostream &out) {
 
         test->_run();
 
-        if (count > 0) out << ",";
+        if (runCount > 0) out << ",";
         out << "\n    {";
-        out << "\n      \"i\": " << count << ",";
+        out << "\n      \"i\": " << runCount << ",";
         out << "\n      \"name\": \"" << testname << "\",";
         out << "\n      \"success\": " << test->_success << ",";
         out << "\n      \"status\": \"" << statusString(test->_status) << "\",";
@@ -183,37 +188,69 @@ bool Test::runAll(std::ostream &out) {
                     }
                 }
             }
+            ++successCount;
+            ++expectedStatusSummary[test->_status];
         }
         else {
             success = false;
+            ++unExpectedStatusSummary[test->_status];
         }
 
-        ++result[test->_status];
-        ++count;
+        ++runCount;
         delete test;
     }
 
+    auto end = std::chrono::high_resolution_clock::now();
+
     out << "\n  ]";
 
-    // print a dashed line
+    // summary
+    out << ",\n  \"summary\": {";
+    out << "\n    \"nominal\": {";
+    size_t i = 0;
+    for (const auto &r : expectedStatusSummary) {
+        if (i > 0) out << ",";
+        out << "\n      \"" << __statusStringPastTense[(uint32_t) r.first] << "\": "
+            << r.second;
+
+        ++i;
+    }
+    out << "\n    },";
+    out << "\n    \"unexpected\": {";
+    i = 0;
+    for (const auto &r : unExpectedStatusSummary) {
+        if (i > 0) out << ",";
+        out << "\n      \"" << __statusStringPastTense[(uint32_t) r.first] << "\": "
+            << r.second;
+
+        ++i;
+    }
+    out << "\n    }";
+    out << "\n  }";
+
+    // finish log output
+    out << "\n}\n";
+    out.flush();
+
     if (_logStatsToStderr) {
         std::string line = "";
         line.resize(80, '-');
         std::cerr << "\n" << line << "\n";
-    }
 
-    // print summary
-    std::stringstream resultSummary;
-    for (const auto &r : result) {
-        resultSummary
-            << r.second << "/" << count
-            << " TESTS " << __statusStringPastTense[(uint32_t) r.first]
-            << "\n";
-    }
-    if (_logStatsToStderr) std::cerr << resultSummary.str();
+        std::cerr << "Finished in " << formatDuration((end - start).count()) << "\n";
 
-    out << "\n}\n";
-    out.flush();
+        std::cerr << successCount << '/' << totalTestCount << " TESTS PASSED\n";
+
+        size_t failedCount = totalTestCount - successCount;
+        if (failedCount > 0) {
+            std::cerr << failedCount << '/' << totalTestCount << " TESTS FAILED\n";
+        }
+
+        size_t blockedCount = totalTestCount - runCount;
+        if (blockedCount > 0) {
+            std::cerr << blockedCount << '/' << totalTestCount << " TESTS NOT RUN\n";
+        }
+    }
 
     return success;
 }
