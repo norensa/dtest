@@ -234,59 +234,63 @@ Socket Socket::accept() {
     return { incoming, addr };
 }
 
-Socket & Socket::pollOrAccept() {
+Socket * Socket::pollOrAcceptOrTimeout() {
 
     std::vector<pollfd> pollSocks;
 
     int incoming = -1;
 
-    while (incoming == -1) {
-        pollSocks.clear();
-        pollSocks.push_back({ _fd, POLLIN, 0 });
-        for (const auto &s : _openConnections) {
-            if (s.second->_fd != -1) {
-                pollSocks.push_back(pollfd{ s.second->_fd, POLLIN, 0 });
-            }
-        }
-
-        int count = sys::poll(pollSocks.data(), pollSocks.size(), 10);
-
-        for (const auto &p : pollSocks) {
-            if (count == 0) break;
-
-            if (p.revents == 0) continue;
-
-            --count;
-
-            if (p.fd == _fd) {
-                sockaddr addr;
-                socklen_t len = sizeof(addr);
-
-                if (
-                    (p.revents & POLLIN) &&
-                    (incoming = accept4(_fd, &addr, &len, SOCK_NONBLOCK)) != -1
-                ) {
-                    _openConnections[incoming] = new Socket(incoming, addr);
-                }
-            }
-            else if (
-                (p.revents & POLLRDHUP)
-                || (p.revents & POLLERR)
-                || (p.revents & POLLHUP)
-                || (p.revents & POLLNVAL)
-            ) {
-                auto c = _openConnections[p.fd];
-                c->close();
-                delete c;
-                _openConnections.erase(p.fd);
-            }
-            else if ((p.revents & POLLIN)) {
-                incoming = p.fd;
-            }
+    pollSocks.clear();
+    pollSocks.push_back({ _fd, POLLIN, 0 });
+    for (const auto &s : _openConnections) {
+        if (s.second->_fd != -1) {
+            pollSocks.push_back(pollfd{ s.second->_fd, POLLIN, 0 });
         }
     }
 
-    return *_openConnections[incoming];
+    int count = sys::poll(pollSocks.data(), pollSocks.size(), 10);
+
+    for (const auto &p : pollSocks) {
+        if (count == 0) break;
+
+        if (p.revents == 0) continue;
+
+        --count;
+
+        if (p.fd == _fd) {
+            sockaddr addr;
+            socklen_t len = sizeof(addr);
+
+            if (
+                (p.revents & POLLIN) &&
+                (incoming = accept4(_fd, &addr, &len, SOCK_NONBLOCK)) != -1
+            ) {
+                _openConnections[incoming] = new Socket(incoming, addr);
+            }
+        }
+        else if (
+            (p.revents & POLLRDHUP)
+            || (p.revents & POLLERR)
+            || (p.revents & POLLHUP)
+            || (p.revents & POLLNVAL)
+        ) {
+            auto c = _openConnections[p.fd];
+            c->close();
+            delete c;
+            _openConnections.erase(p.fd);
+        }
+        else if ((p.revents & POLLIN)) {
+            incoming = p.fd;
+        }
+    }
+
+    return (incoming == -1) ? nullptr : _openConnections[incoming];
+}
+
+Socket & Socket::pollOrAccept() {
+    Socket *ptr = nullptr;
+    while (ptr == nullptr) ptr = pollOrAcceptOrTimeout();
+    return *ptr;
 }
 
 void Socket::dispose(Socket &sock) {

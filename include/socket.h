@@ -97,6 +97,8 @@ public:
 
     Socket accept();
 
+    Socket * pollOrAcceptOrTimeout();
+
     Socket & pollOrAccept();
 
     void dispose(Socket &sock);
