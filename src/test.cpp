@@ -241,7 +241,7 @@ bool Test::runAll(std::ostream &out) {
 
         std::cerr << successCount << '/' << totalTestCount << " TESTS PASSED\n";
 
-        size_t failedCount = totalTestCount - successCount;
+        size_t failedCount = runCount - successCount;
         if (failedCount > 0) {
             std::cerr << failedCount << '/' << totalTestCount << " TESTS FAILED\n";
         }
