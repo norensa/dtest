@@ -208,27 +208,39 @@ bool Test::runAll(std::ostream &out) {
     out << "\n  ]";
 
     // summary
+    size_t failedCount = runCount - successCount;
+    size_t blockedCount = totalTestCount - runCount;
+
     out << ",\n  \"summary\": {";
-    out << "\n    \"nominal\": {";
-    size_t i = 0;
-    for (const auto &r : expectedStatusSummary) {
-        if (i > 0) out << ",";
-        out << "\n      \"" << __statusStringPastTense[(uint32_t) r.first] << "\": "
-            << r.second;
 
-        ++i;
-    }
-    out << "\n    },";
-    out << "\n    \"unexpected\": {";
-    i = 0;
-    for (const auto &r : unExpectedStatusSummary) {
-        if (i > 0) out << ",";
-        out << "\n      \"" << __statusStringPastTense[(uint32_t) r.first] << "\": "
-            << r.second;
+    if (successCount > 0) {
+        out << "\n    \"nominal\": {";
+        size_t i = 0;
+        for (const auto &r : expectedStatusSummary) {
+            if (i > 0) out << ",";
+            out << "\n      \"" << __statusStringPastTense[(uint32_t) r.first] << "\": "
+                << r.second;
 
-        ++i;
+            ++i;
+        }
+        out << "\n    }";
+
+        if (failedCount > 0) out << ',';
     }
-    out << "\n    }";
+
+    if (failedCount > 0) {
+        out << "\n    \"unexpected\": {";
+        size_t i = 0;
+        for (const auto &r : unExpectedStatusSummary) {
+            if (i > 0) out << ",";
+            out << "\n      \"" << __statusStringPastTense[(uint32_t) r.first] << "\": "
+                << r.second;
+
+            ++i;
+        }
+        out << "\n    }";
+    }
+
     out << "\n  }";
 
     // finish log output
@@ -244,12 +256,10 @@ bool Test::runAll(std::ostream &out) {
 
         std::cerr << successCount << '/' << totalTestCount << " TESTS PASSED\n";
 
-        size_t failedCount = runCount - successCount;
         if (failedCount > 0) {
             std::cerr << failedCount << '/' << totalTestCount << " TESTS FAILED\n";
         }
 
-        size_t blockedCount = totalTestCount - runCount;
         if (blockedCount > 0) {
             std::cerr << blockedCount << '/' << totalTestCount << " TESTS NOT RUN\n";
         }
