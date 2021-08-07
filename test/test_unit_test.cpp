@@ -32,3 +32,8 @@ unit("unit-test", "invalid-free")
     free((void *) 0xdead);
 })
 .expect(Status::FAIL);
+
+unit("unit-test", "error-message")
+.body([] {
+    err("error");
+});
