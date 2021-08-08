@@ -40,8 +40,13 @@ private:
     bool _enabled = true;
     size_t _counter = 1;
 
+    Socket _serverSocket;
+    Socket _clientSocket;
+
     Memory _memory;
     Network _network;
+
+    static void __segFaultHandler(int sig);
 
 public:
 

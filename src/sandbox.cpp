@@ -2,8 +2,37 @@
 #include <dlfcn.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <signal.h>
 
 using namespace dtest;
+
+namespace dtest {
+
+enum class MessageCode : uint8_t {
+    COMPLETE,
+    ERROR,
+    OK,
+};
+
+}
+
+static Sandbox instance;
+
+void Sandbox::__segFaultHandler(int sig){
+    if (sig == SIGSEGV) {
+        instance.exit();
+
+        Message m;
+        m << MessageCode::ERROR
+            << std::string("Detected segmentation fault. Caused by:\n")
+            + CallStack::trace(1).toString();
+        m.send(instance._clientSocket);
+
+        instance._clientSocket.close();
+
+        ::exit(1);
+    }
+}
 
 void Sandbox::enter() {
     _mtx.lock();
@@ -32,19 +61,15 @@ void Sandbox::run(
     const std::function<void(const std::string &)> &onError
 ) {
 
-    enum class MessageCode : uint8_t {
-        COMPLETE,
-        ERROR,
-        OK,
-    };
-
-    Socket serverSocket = Socket(0, 128);
+    _serverSocket = Socket(0, 128);
     pid_t pid = fork();
 
     if (pid == 0) {
-        serverSocket.close();
+        _serverSocket.close();
 
-        Socket clientSocket = Socket(serverSocket.address());
+        signal(SIGSEGV, __segFaultHandler);
+
+        _clientSocket = Socket(_serverSocket.address());
 
         try {
             enter();
@@ -54,43 +79,47 @@ void Sandbox::run(
             Message m;
             m << MessageCode::COMPLETE;
             onComplete(m);
-            m.send(clientSocket);
+            m.send(_clientSocket);
         }
         catch (const SandboxException &e) {
             // exit() is invoked internally
             Message m;
-            m << MessageCode::ERROR << std::string(e.what());
-            m.send(clientSocket);
+            m << MessageCode::ERROR
+                << std::string(e.what());
+            m.send(_clientSocket);
         }
         catch (const std::exception &e) {
             exit();
             Message m;
-            m << MessageCode::ERROR << std::string("Detected uncaught exception: ") + e.what();
-            m.send(clientSocket);
+            m << MessageCode::ERROR
+                << std::string("Detected uncaught exception: ") + e.what();
+            m.send(_clientSocket);
         }
         catch (...) {
             exit();
             Message m;
-            m << MessageCode::ERROR << std::string("Unknown exception thrown");
-            m.send(clientSocket);
+            m << MessageCode::ERROR
+                << std::string("Unknown exception thrown");
+            m.send(_clientSocket);
         }
 
-        Message reply;
-        reply.recv(clientSocket);
-        MessageCode code;
-        reply >> code;
+        // Message reply;
+        // reply.recv(_clientSocket);
+        // MessageCode code;
+        // reply >> code;
 
-        clientSocket.close();
+        _clientSocket.close();
 
         // clear any leaked memory blocks
         clearMemoryBlocks();
 
-        ::exit((code == MessageCode::OK) ? 0 : 1);
+        // ::exit((code == MessageCode::OK) ? 0 : 1);
+        ::exit(0);
     }
     else {
         bool done = false;
         while (! done) {
-            auto conn = serverSocket.pollOrAcceptOrTimeout();
+            auto conn = _serverSocket.pollOrAcceptOrTimeout();
             if (conn == nullptr) {
                 int exitStatus;
                 if (waitpid(pid, &exitStatus, WNOHANG) == 0) {
@@ -106,13 +135,13 @@ void Sandbox::run(
                 if (! m.hasData()) continue;
             }
             catch (...) {
-                serverSocket.dispose(*conn);
+                _serverSocket.dispose(*conn);
                 continue;
             }
 
-            Message reply;
-            reply << MessageCode::OK;
-            reply.send(*conn);
+            // Message reply;
+            // reply << MessageCode::OK;
+            // reply.send(*conn);
 
             MessageCode code;
             m >> code;
@@ -139,7 +168,7 @@ void Sandbox::run(
         }
     }
 
-    serverSocket.close();
+    _serverSocket.close();
 }
 
 void Sandbox::resourceSnapshot(ResourceSnapshot &snapshot) {
@@ -156,7 +185,6 @@ void Sandbox::resourceSnapshot(ResourceSnapshot &snapshot) {
     snapshot.network.receive.count = _network._recvCount - snapshot.network.receive.count;
 }
 
-static Sandbox instance;
 Sandbox & dtest::sandbox() {
     return instance;
 }
