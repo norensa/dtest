@@ -329,11 +329,12 @@ DriverContext::WorkerHandle DriverContext::_spawnWorker() {
 
 void DriverContext::_start() {
     _socket = Socket(0, 128);
+    _superSocket = Socket(0, 128);
 }
 
-uint32_t DriverContext::_waitForEvent() {
+uint32_t DriverContext::_waitForSuperEvent() {
     while (true) {
-        auto &conn = _socket.pollOrAccept();
+        auto &conn = _superSocket.pollOrAccept();
 
         Message m;
         try {
@@ -341,7 +342,7 @@ uint32_t DriverContext::_waitForEvent() {
             if (! m.hasData()) continue;
         }
         catch (...) {
-            _socket.dispose(conn);
+            _superSocket.dispose(conn);
             continue;
         }
 
@@ -366,6 +367,32 @@ uint32_t DriverContext::_waitForEvent() {
         }
         break;
 
+        default: break;
+        }
+
+        return id;
+    }
+}
+
+uint32_t DriverContext::_waitForEvent() {
+    while (true) {
+        auto &conn = _socket.pollOrAccept();
+
+        Message m;
+        try {
+            m.recv(conn);
+            if (! m.hasData()) continue;
+        }
+        catch (...) {
+            _socket.dispose(conn);
+            continue;
+        }
+
+        OpCode op;
+        uint32_t id;
+        m >> op >> id;
+
+        switch (op) {
         case OpCode::NOTIFY: {
             auto it = _allocatedWorkers.find(id);
             if (it == _allocatedWorkers.end()) return -1;
@@ -398,7 +425,7 @@ std::list<uint32_t> DriverContext::_allocateWorkers(uint16_t n) {
         if (n-- == 0) break;
 
         while (! w.second._running) {
-            _waitForEvent();
+            _waitForSuperEvent();
         }
 
         w.second._notifyCount = 0;
@@ -428,7 +455,7 @@ void DriverContext::_run(const Test *test) {
 void DriverContext::_join(Test *test) {
     for (auto &w : _allocatedWorkers) {
         while (! w.second._done) {
-            _waitForEvent();
+            _waitForSuperEvent();
         }
 
         if (w.second._status > test->_status) {
@@ -527,12 +554,12 @@ void WorkerContext::_start(uint32_t id) {
     _id = id;
 
     _socket = Socket(0, 128);
-
     _driverSocket = Socket(DriverContext::instance->_socket.address());
+    _superDriverSocket = Socket(DriverContext::instance->_superSocket.address());
 
     Message m;
     m << OpCode::WORKER_STARTED << _id << _socket.address();
-    m.send(_driverSocket);
+    m.send(_superDriverSocket);
 }
 
 void WorkerContext::_waitForEvent() {
@@ -574,7 +601,7 @@ void WorkerContext::_waitForEvent() {
 
                 Message m;
                 m << OpCode::FINISHED_TEST << _id << t->_status << t->_detailedReport;
-                m.send(_driverSocket);
+                m.send(_superDriverSocket);
             }
 
             _inTest = false;

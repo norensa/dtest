@@ -259,12 +259,15 @@ private:
     std::unordered_map<uint32_t, WorkerHandle> _allocatedWorkers;
     std::list<Message> _userMessages;
     Socket _socket;
+    Socket _superSocket;
 
     DriverContext() = default;
 
     WorkerHandle _spawnWorker();
 
     void _start();
+
+    uint32_t _waitForSuperEvent();
 
     uint32_t _waitForEvent();
 
@@ -305,6 +308,7 @@ private:
     std::list<Message> _userMessages;
     Socket _socket;
     Socket _driverSocket;
+    Socket _superDriverSocket;
     std::unordered_map<std::string, Test *> _tests;
     bool _inTest = false;
 
