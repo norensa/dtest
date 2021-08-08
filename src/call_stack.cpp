@@ -32,24 +32,26 @@ std::string CallStack::toString() const noexcept {
             int status;
             demangled = abi::__cxa_demangle(info.dli_sname, NULL, 0, &status);
             snprintf(
-                buf, sizeof(buf), "%-3d  %p  %s + %p\n",
+                buf, sizeof(buf), "%-3d  %p  %s + %p%s",
                 _len - i - 1, _stack[i],
                 status == 0 ? demangled : info.dli_sname,
-                (void *) ((char *)_stack[i] - (char *)info.dli_saddr)
+                (void *) ((char *)_stack[i] - (char *)info.dli_saddr),
+                (i == _len - 1) ? "" : "\n"
             );
             free(demangled);
         }
         else {
             snprintf(
-                buf, sizeof(buf), "%-3d  %p  %s\n",
+                buf, sizeof(buf), "%-3d  %p  %s%s",
                 _len - i - 1, _stack[i],
-                symbols[i]
+                symbols[i],
+                (i == _len - 1) ? "" : "\n"
             );
         }
         s << buf;
     }
     free(symbols);
-    if (_len == CallStack::_MAX_STACK_FRAMES + _skip) s << "[truncated]\n";
+    if (_len == CallStack::_MAX_STACK_FRAMES + _skip) s << "\n[truncated]";
 
     return s.str();
 }
