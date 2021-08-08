@@ -42,6 +42,8 @@ void Sandbox::run(
     pid_t pid = fork();
 
     if (pid == 0) {
+        serverSocket.close();
+
         Socket clientSocket = Socket(serverSocket.address());
 
         try {
