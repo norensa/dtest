@@ -11,7 +11,6 @@ namespace dtest {
 enum class MessageCode : uint8_t {
     COMPLETE,
     ERROR,
-    OK,
 };
 
 }
@@ -103,17 +102,11 @@ void Sandbox::run(
             m.send(_clientSocket);
         }
 
-        // Message reply;
-        // reply.recv(_clientSocket);
-        // MessageCode code;
-        // reply >> code;
-
         _clientSocket.close();
 
         // clear any leaked memory blocks
         clearMemoryBlocks();
 
-        // ::exit((code == MessageCode::OK) ? 0 : 1);
         ::exit(0);
     }
     else {
@@ -138,10 +131,6 @@ void Sandbox::run(
                 _serverSocket.dispose(*conn);
                 continue;
             }
-
-            // Message reply;
-            // reply << MessageCode::OK;
-            // reply.send(*conn);
 
             MessageCode code;
             m >> code;
