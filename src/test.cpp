@@ -312,6 +312,9 @@ DriverContext::WorkerHandle DriverContext::_spawnWorker() {
     pid_t pid = fork();
 
     if (pid == 0) {
+        // close all open descriptors
+        for (int fd = getdtablesize(); fd > 2; --fd) close(fd);
+
         try {
             Test::runWorker(id);
             exit(0);
