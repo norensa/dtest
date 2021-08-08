@@ -240,7 +240,6 @@ Socket * Socket::pollOrAcceptOrTimeout() {
 
     int incoming = -1;
 
-    pollSocks.clear();
     pollSocks.push_back({ _fd, POLLIN, 0 });
     for (const auto &s : _openConnections) {
         if (s.second->_fd != -1) {
