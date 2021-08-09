@@ -1,6 +1,14 @@
+# module name
+MODULE = dtest
+
+# dtest dir
+DTEST = ..
+
+################################################################################
+
 BUILD_DIR = build/$(shell uname -s)-$(shell uname -m)
 
-INCLUDES = -I../include
+INCLUDES = -I$(DTEST)/include
 
 LIB_DIRS =
 LIBS = 
@@ -31,27 +39,27 @@ endif
 
 clean :
 	@rm -rf build
-	@echo "Cleaned dtest/test/build/"
+	@echo "Cleaned $(MODULE)/test/build/"
 
 clean-dep :
 	@rm -rf .dep
-	@echo "Cleaned dtest/test/.dep/"
+	@echo "Cleaned $(MODULE)/test/.dep/"
 
 # dirs
 
 .dep $(BUILD_DIR):
-	@echo "MKDIR     dtest/test/$@/"
+	@echo "MKDIR     $(MODULE)/test/$@/"
 	@mkdir -p $@
 
 # test
 
 .dep/%.d : %.cpp | .dep
-	@echo "DEP       dtest/test/$@"
+	@echo "DEP       $(MODULE)/test/$@"
 	@set -e; rm -f $@; \
 	$(CXX) $(DEPFLAGS) $(INCLUDES) $< > $@.$$$$; \
 	sed 's,\($*\)\.o[ :]*,test/$(BUILD_DIR)/\1.so $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 
 $(BUILD_DIR)/%.so : %.cpp | $(BUILD_DIR)
-	@echo "CXX       dtest/test/$@"
+	@echo "CXX       $(MODULE)/test/$@"
 	@$(CXX) -shared $(CPPFLAGS) $(CXXFLAGS) $(EXTRACXXFLAGS) $(INCLUDES) $< -o $@
