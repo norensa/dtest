@@ -118,7 +118,7 @@ bool Sandbox::run(
             m.send(_clientSocket);
         }
         catch (const SandboxException &e) {
-            // exitAll() is invoked internally
+            exitAll();
             Message m;
             m << MessageCode::ERROR
                 << std::string(e.what());

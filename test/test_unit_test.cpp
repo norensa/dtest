@@ -66,3 +66,16 @@ unit("unit-test", "large-report")
 .body([] {
     for (auto i = 0; i < 500; ++i) malloc(1);
 });
+
+unit("unit-test", "fail-before-dynamic-free")
+.expect(Status::FAIL)
+.body([] {
+    struct b {
+        void *buf = malloc(1);
+        ~b() {
+            free(buf);
+        }
+    } b;
+
+    assert(false)
+});

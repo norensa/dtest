@@ -338,7 +338,9 @@ public:
         std::string("Assertion failed for expression '") + expr +
         "' in file " + file + ":" + std::to_string(line) + " " + caller
       )
-    { }
+    {
+        sandbox().enter();
+    }
 };
 
 }  // end namespace dtest
