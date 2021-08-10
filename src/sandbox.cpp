@@ -53,6 +53,14 @@ void Sandbox::exit() {
     _mtx.unlock();
 }
 
+void Sandbox::exitAll() {
+    _mtx.lock();
+    _memory.trackActivity(false);
+    _network.trackActivity(false);
+    _counter = 1;
+    _mtx.unlock();
+}
+
 void Sandbox::run(
     const std::function<void()> &func,
     const std::function<void(Message &)> &onComplete,
@@ -81,21 +89,21 @@ void Sandbox::run(
             m.send(_clientSocket);
         }
         catch (const SandboxException &e) {
-            // exit() is invoked internally
+            // exitAll() is invoked internally
             Message m;
             m << MessageCode::ERROR
                 << std::string(e.what());
             m.send(_clientSocket);
         }
         catch (const std::exception &e) {
-            exit();
+            exitAll();
             Message m;
             m << MessageCode::ERROR
                 << std::string("Detected uncaught exception: ") + e.what();
             m.send(_clientSocket);
         }
         catch (...) {
-            exit();
+            exitAll();
             Message m;
             m << MessageCode::ERROR
                 << std::string("Unknown exception thrown");

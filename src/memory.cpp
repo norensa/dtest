@@ -30,7 +30,7 @@ void Memory::retrack(void *oldPtr, void *newPtr, size_t newSize) {
     if (it == _blocks.end()) {
         _exit();
 
-        sandbox().exit();
+        sandbox().exitAll();
 
         throw SandboxFatalException(
             FatalError::MEMORY_BLOCK_DOES_NOT_EXIST,
@@ -56,7 +56,7 @@ void Memory::remove(void *ptr) {
     if (it == _blocks.end()) {
         _exit();
 
-        sandbox().exit();
+        sandbox().exitAll();
 
         throw SandboxFatalException(
             FatalError::MEMORY_BLOCK_DOES_NOT_EXIST,

@@ -62,6 +62,8 @@ public:
 
     void exit();
 
+    void exitAll();
+
     void run(
         const std::function<void()> &func,
         const std::function<void(Message &)> &onComplete,
