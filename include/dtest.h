@@ -9,25 +9,28 @@ using Status = dtest::Test::Status;
 
 #define __dtest_instance(t) static auto __dtest_concat(__unit_test__uid_, __COUNTER__) = (*(t))
 
+#define __test_1(testType, name) __dtest_instance(new testType(name))
+#define __test_2(testType, module,name) __dtest_instance(new testType(module, name))
+#define __test_(_1, _2, NAME, ...) NAME
+#define __test(testType, ...) __test_(__VA_ARGS__, __test_2, __test_1, UNUSED)(testType, __VA_ARGS__)
+
 ////
 
 #include <unit_test.h>
 
-#define __unit_1(name) __dtest_instance(new dtest::UnitTest(name))
-#define __unit_2(module,name) __dtest_instance(new dtest::UnitTest(module, name))
+#define unit(...) __test(dtest::UnitTest, __VA_ARGS__)
 
-#define __unit(_1, _2, NAME, ...) NAME
-#define unit(...) __unit(__VA_ARGS__, __unit_2, __unit_1, UNUSED)(__VA_ARGS__)
+////
+
+#include <performance_test.h>
+
+#define perf(...) __test(dtest::PerformanceTest, __VA_ARGS__)
 
 ////
 
 #include <distributed_unit_test.h>
 
-#define __dunit_1(name) __dtest_instance(new dtest::DistributedUnitTest(name))
-#define __dunit_2(module,name) __dtest_instance(new dtest::DistributedUnitTest(module, name))
-
-#define __dunit(_1, _2, NAME, ...) NAME
-#define dunit(...) __dunit(__VA_ARGS__, __dunit_2, __dunit_1, UNUSED)(__VA_ARGS__)
+#define dunit(...) __test(dtest::DistributedUnitTest, __VA_ARGS__)
 
 #define notify() dtest::Context::instance()->notify()
 

@@ -28,6 +28,7 @@ public:
     enum class Status {
         PASS,
         PASS_WITH_MEMORY_LEAK,
+        TOO_SLOW,
         TIMEOUT,
         FAIL,
         PENDING,
