@@ -57,7 +57,7 @@ clean-dep :
 	@echo "DEP       $(MODULE)/test/$@"
 	@set -e; rm -f $@; \
 	$(CXX) $(DEPFLAGS) $(INCLUDES) $< > $@.$$$$; \
-	sed 's,\($*\)\.o[ :]*,test/$(BUILD_DIR)/\1.so $@ : ,g' < $@.$$$$ > $@; \
+	sed 's,\($*\)\.o[ :]*,$(BUILD_DIR)/\1.so $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 
 $(BUILD_DIR)/%.so : %.cpp | $(BUILD_DIR)
