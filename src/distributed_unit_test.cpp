@@ -1,5 +1,6 @@
 #include <distributed_unit_test.h>
 #include <util.h>
+#include <time_of.h>
 
 using namespace dtest;
 
@@ -23,7 +24,7 @@ void DistributedUnitTest::_workerRun() {
             sandbox().resourceSnapshot(_usedResources);
             _status = Status::FAIL;
 
-            _workerBodyTime = _timedRun(_workerBody);
+            _workerBodyTime = timeOf(_workerBody);
 
             _status = Status::PASS;
             sandbox().resourceSnapshot(_usedResources);

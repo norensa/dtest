@@ -24,8 +24,6 @@ protected:
 
     virtual void _configure();
 
-    uint64_t _timedRun(const std::function<void()> &func);
-
     void _checkMemoryLeak();
 
     void _checkTimeout(uint64_t time);

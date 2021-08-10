@@ -1,22 +1,11 @@
 #include <unit_test.h>
 #include <util.h>
-#include <chrono>
+#include <time_of.h>
 
 using namespace dtest;
 
 void UnitTest::_configure() {
     sandbox().disableFaultyNetwork();
-}
-
-uint64_t UnitTest::_timedRun(const std::function<void()> &func) {
-    auto start = std::chrono::high_resolution_clock::now();
-
-    if (func) func();
-
-    auto end = std::chrono::high_resolution_clock::now();
-    if (! func) end = start;
-
-    return (end - start).count();
 }
 
 void UnitTest::_checkMemoryLeak() {
@@ -50,9 +39,9 @@ void UnitTest::_driverRun() {
             sandbox().resourceSnapshot(_usedResources);
             _status = Status::FAIL;
 
-            _initTime = _timedRun(_onInit);
-            _bodyTime = _timedRun(_body);
-            _completeTime = _timedRun(_onComplete);
+            _initTime = timeOf(_onInit);
+            _bodyTime = timeOf(_body);
+            _completeTime = timeOf(_onComplete);
 
             _status = Status::PASS;
             sandbox().resourceSnapshot(_usedResources);

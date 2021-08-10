@@ -45,3 +45,9 @@ using Status = dtest::Test::Status;
 #include <random.h>
 
 #define random() dtest::frand()
+
+////
+
+#include <time_of.h>
+
+#define timeOf(code) dtest::timeOf(code)
