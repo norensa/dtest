@@ -12,42 +12,26 @@ void PerformanceTest::_checkPerformance() {
 }
 
 void PerformanceTest::_driverRun() {
+    UnitTest::_driverRun();
+
     auto finish = sandbox().run(
         _timeout,
         [this] {
             _configure();
 
-            sandbox().resourceSnapshot(_usedResources);
-            _status = Status::FAIL;
-
-            _initTime = timeOf(_onInit);
-            _bodyTime = timeOf(_body);
+            timeOf(_onInit);
             _baselineTime = timeOf(_baseline);
-            _completeTime = timeOf(_onComplete);
-
-            _status = Status::PASS;
-            sandbox().resourceSnapshot(_usedResources);
+            timeOf(_onComplete);
         },
         [this] (Message &m) {
             _checkMemoryLeak();
-            _checkTimeout(_bodyTime);
             _checkPerformance();
 
             m << _status
-                << _usedResources
-                << _errors
-                << _initTime
-                << _bodyTime
-                << _completeTime
                 << _baselineTime;
         },
         [this] (Message &m) {
             m >> _status
-                >> _usedResources
-                >> _errors
-                >> _initTime
-                >> _bodyTime
-                >> _completeTime
                 >> _baselineTime;
         },
         [this] (const std::string &error) {
