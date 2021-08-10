@@ -15,7 +15,8 @@ void DistributedUnitTest::_configure() {
 }
 
 void DistributedUnitTest::_workerRun() {
-    sandbox().run(
+    auto finish = sandbox().run(
+        _timeout,
         [this] {
             _configure();
 
@@ -47,6 +48,8 @@ void DistributedUnitTest::_workerRun() {
             _errors.push_back(error);
         }
     );
+
+    if (! finish) _status = Status::TIMEOUT;
 }
 
 bool DistributedUnitTest::_hasNetworkReport() {

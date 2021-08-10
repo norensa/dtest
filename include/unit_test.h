@@ -9,7 +9,7 @@ class UnitTest : public Test {
 protected:
 
     // configuration
-    uint64_t _timeout = -1lu;
+    uint64_t _timeout = 10 * 1e9;       // 10 seconds
     bool _ignoreMemoryLeak = false;
 
     // test functions

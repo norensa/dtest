@@ -60,3 +60,9 @@ unit("unit-test", "seg-fault-again")
     int *ptr = (int *) 0xdead;
     *ptr = 0;
 });
+
+unit("unit-test", "large-report")
+.expect(Status::PASS_WITH_MEMORY_LEAK)
+.body([] {
+    for (auto i = 0; i < 500; ++i) malloc(1);
+});

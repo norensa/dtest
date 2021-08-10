@@ -42,7 +42,8 @@ void UnitTest::_checkTimeout(uint64_t time) {
 }
 
 void UnitTest::_driverRun() {
-    sandbox().run(
+    auto finish = sandbox().run(
+        _timeout,
         [this] {
             _configure();
 
@@ -80,6 +81,8 @@ void UnitTest::_driverRun() {
             _errors.push_back(error);
         }
     );
+
+    if (! finish) _status = Status::TIMEOUT;
 }
 
 bool UnitTest::_hasMemoryReport() {

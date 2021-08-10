@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <signal.h>
+#include <util.h>
 
 using namespace dtest;
 
@@ -17,9 +18,10 @@ enum class MessageCode : uint8_t {
 
 static Sandbox instance;
 
-void Sandbox::__segFaultHandler(int sig){
-    if (sig == SIGSEGV) {
-        instance.exit();
+void Sandbox::__signalHandler(int sig){
+    switch (sig) {
+    case SIGSEGV: {
+        instance.exitAll();
 
         Message m;
         m << MessageCode::ERROR
@@ -30,6 +32,31 @@ void Sandbox::__segFaultHandler(int sig){
         instance._clientSocket.close();
 
         ::exit(1);
+    }
+
+    case SIGABRT: {
+        instance.exitAll();
+
+        Message m;
+        m << MessageCode::ERROR
+            << std::string("Caught abort signal. Caused by:\n")
+            + CallStack::trace(1).toString();
+        m.send(instance._clientSocket);
+
+        instance._clientSocket.close();
+
+        ::exit(1);
+    }
+
+    case SIGPIPE:
+    case SIGKILL: {
+        instance.exitAll();
+        instance._clientSocket.close();
+
+        ::exit(2);
+    }
+
+    default: break;
     }
 }
 
@@ -61,20 +88,22 @@ void Sandbox::exitAll() {
     _mtx.unlock();
 }
 
-void Sandbox::run(
+bool Sandbox::run(
+    uint64_t timeoutNanos,
     const std::function<void()> &func,
     const std::function<void(Message &)> &onComplete,
     const std::function<void(Message &)> &onSuccess,
     const std::function<void(const std::string &)> &onError
 ) {
 
+    bool finished = false;
     _serverSocket = Socket(0, 128);
     pid_t pid = fork();
 
     if (pid == 0) {
         _serverSocket.close();
 
-        signal(SIGSEGV, __segFaultHandler);
+        signal(SIGSEGV, __signalHandler);
 
         _clientSocket = Socket(_serverSocket.address());
 
@@ -119,12 +148,23 @@ void Sandbox::run(
     }
     else {
         bool done = false;
+
+        auto start = std::chrono::high_resolution_clock::now();
+
         while (! done) {
             auto conn = _serverSocket.pollOrAcceptOrTimeout();
             if (conn == nullptr) {
-                int exitStatus;
-                if (waitpid(pid, &exitStatus, WNOHANG) == 0) {
-                    onError("Terminated unexpectedly with exit code " + std::to_string(exitStatus));
+                auto end = std::chrono::high_resolution_clock::now();
+
+                if ((uint64_t) (end - start).count() > timeoutNanos) {
+                    int exitStatus;
+                    if (waitpid(pid, &exitStatus, WNOHANG) == 0) {
+                        onError("Terminated unexpectedly with exit code " + std::to_string(exitStatus));
+                    }
+                    else {
+                        kill(pid, SIGKILL);
+                        onError("Exceeded timeout of " + formatDuration(timeoutNanos));
+                    }
                     done = true;
                 }
                 continue;
@@ -146,7 +186,7 @@ void Sandbox::run(
             switch (code) {
             case MessageCode::COMPLETE: {
                 onSuccess(m);
-                done = true;
+                finished = true;
             }
             break;
 
@@ -154,18 +194,24 @@ void Sandbox::run(
                 std::string reason;
                 m >> reason;
                 onError(reason);
-                done = true;
+                finished = true;
             }
             break;
 
-            default: break;
+            default: {
+                kill(pid, SIGKILL);
+                onError("An unexpected error has occurred");
+            }
+            break;
             }
 
             waitpid(pid, NULL, 0);
+            done = true;
         }
     }
 
     _serverSocket.close();
+    return finished;
 }
 
 void Sandbox::resourceSnapshot(ResourceSnapshot &snapshot) {

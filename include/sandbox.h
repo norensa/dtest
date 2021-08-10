@@ -46,7 +46,7 @@ private:
     Memory _memory;
     Network _network;
 
-    static void __segFaultHandler(int sig);
+    static void __signalHandler(int sig);
 
 public:
 
@@ -64,7 +64,8 @@ public:
 
     void exitAll();
 
-    void run(
+    bool run(
+        uint64_t timeoutNanos,
         const std::function<void()> &func,
         const std::function<void(Message &)> &onComplete,
         const std::function<void(Message &)> &onSuccess,
