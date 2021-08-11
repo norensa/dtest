@@ -141,9 +141,6 @@ bool Sandbox::run(
 
         _clientSocket.close();
 
-        // clear any leaked memory blocks
-        clearMemoryBlocks();
-
         ::exit(0);
     }
     else {

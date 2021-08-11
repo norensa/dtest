@@ -77,5 +77,11 @@ unit("unit-test", "fail-before-dynamic-free")
         }
     } b;
 
-    assert(false)
+    assert(false);
+});
+
+unit("unit-test", "uncaught-exception")
+.expect(Status::FAIL)
+.body([] {
+    throw std::string("error");
 });
