@@ -158,13 +158,10 @@ bool Sandbox::run(
 
                 if ((uint64_t) (end - start).count() > timeoutNanos) {
                     int exitStatus;
-                    if (waitpid(pid, &exitStatus, WNOHANG) == 0) {
-                        onError("Terminated unexpectedly with exit code " + std::to_string(exitStatus));
-                    }
-                    else {
+                    if (waitpid(pid, &exitStatus, WNOHANG) != 0) {
                         kill(pid, SIGKILL);
-                        onError("Exceeded timeout of " + formatDuration(timeoutNanos));
                     }
+                    onError("Exceeded timeout of " + formatDuration(timeoutNanos));
                     done = true;
                 }
                 continue;
