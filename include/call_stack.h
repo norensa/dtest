@@ -70,6 +70,10 @@ public:
     }
 
     std::string toString() const noexcept;
+
+    void * const * stack() const {
+        return _stack + _skip;
+    }
 };
 
 }  // end namespace dtest;

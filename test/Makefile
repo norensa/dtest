@@ -15,7 +15,7 @@ LIBS =
 
 CXX = g++
 CPPFLAGS = -Werror -Wall -Winline -Wpedantic
-CXXFLAGS = -std=c++11 -march=native -fPIC
+CXXFLAGS = -std=c++11 -march=native -fPIC -fopenmp
 
 LDFLAGS = -Wl,-E -Wl,-export-dynamic
 DEPFLAGS = -MM

@@ -74,6 +74,7 @@ int main(int argc, char *argv[]) {
         getcwd(cwd, PATH_MAX);
         findTests(cwd);
     }
+    Memory::reinitialize();
 
     Test::logStatsToStderr(true);
 

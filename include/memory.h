@@ -41,7 +41,13 @@ private:
         __locked = false;
     }
 
+    bool _canTrackAlloc(const CallStack callstack);
+
+    bool _canTrackDealloc(const CallStack callstack);
+
 public:
+
+    static void reinitialize();
 
     Memory();
 

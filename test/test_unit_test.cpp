@@ -98,3 +98,10 @@ unit("unit-test", "local-test-fail")
 .body([] {
     assert(false);
 });
+
+unit("unit-test", "openmp")
+.body([] {
+    #pragma omp parallel
+    {
+    }
+});

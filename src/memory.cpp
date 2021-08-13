@@ -2,23 +2,90 @@
 #include <sandbox.h>
 #include <sstream>
 #include <malloc.h>
-
+#include <dlfcn.h>
+#include<iostream>
 using namespace dtest;
 
 thread_local bool Memory::__locked = false;
 
 static Memory *instance = nullptr;
 
+struct TrackingException {
+    size_t stackPos;
+    const char *name;
+    size_t offset;
+    void *address = nullptr;
+
+    TrackingException(size_t stackPos, const char *name, size_t offset)
+    :   stackPos(stackPos),
+        name(name),
+        offset(offset)
+    { }
+};
+
+static TrackingException allocEx[] = {
+    { 0, "_dl_allocate_tls", 0x2b },
+    { 2, "GOMP_parallel", 0x2a },
+};
+const size_t nAllocEx = sizeof(allocEx) / sizeof(TrackingException);
+
+static TrackingException deallocEx[] = {
+    { 2, "GOMP_parallel", 0x41 },
+};
+const size_t nDeallocEx = sizeof(deallocEx) / sizeof(TrackingException);
+
+bool Memory::_canTrackAlloc(const CallStack callstack) {
+    auto s = callstack.stack();
+
+    for (size_t i = 0; i < nAllocEx; ++i) {
+        if (s[allocEx[i].stackPos] == allocEx[i].address) return false;
+    }
+
+    return true;
+}
+
+bool Memory::_canTrackDealloc(const CallStack callstack) {
+    auto s = callstack.stack();
+
+    for (size_t i = 0; i < nDeallocEx; ++i) {
+        if (s[deallocEx[i].stackPos] == deallocEx[i].address) return false;
+    }
+
+    return true;
+}
+
+void Memory::reinitialize() {
+    for (size_t i = 0; i < nAllocEx; ++i) {
+        allocEx[i].address = dlsym(RTLD_NEXT, allocEx[i].name);
+        if (allocEx[i].address != nullptr) {
+            allocEx[i].address = (char *) allocEx[i].address + allocEx[i].offset;
+        }
+    }
+
+    for (size_t i = 0; i < nDeallocEx; ++i) {
+        deallocEx[i].address = dlsym(RTLD_NEXT, deallocEx[i].name);
+        if (deallocEx[i].address != nullptr) {
+            deallocEx[i].address = (char *) deallocEx[i].address + deallocEx[i].offset;
+        }
+    }
+}
+
 Memory::Memory() {
     instance = this;
+    reinitialize();
 }
 
 void Memory::track(void *ptr, size_t size) {
     if (! _enter()) return;
 
-    _blocks.insert({ ptr, { size, CallStack::trace(2) }});
-    _allocateSize += size;
-    ++_allocateCount;
+    {
+        auto callstack = CallStack::trace(2);
+        if (_canTrackAlloc(callstack)) {
+            _blocks.insert({ ptr, { size, callstack }});
+            _allocateSize += size;
+            ++_allocateCount;
+        }
+    }
 
     _exit();
 }
@@ -28,15 +95,23 @@ void Memory::retrack(void *oldPtr, void *newPtr, size_t newSize) {
 
     auto it = _blocks.find(oldPtr);
     if (it == _blocks.end()) {
+        {
+            auto callstack = CallStack::trace(2);
+
+            if (_canTrackDealloc(callstack)) {
+                _exit();
+                sandbox().exitAll();
+
+                throw SandboxFatalException(
+                    FatalError::MEMORY_BLOCK_DOES_NOT_EXIST,
+                    "No such allocation",
+                    2
+                );
+            }
+        }
+
         _exit();
-
-        sandbox().exitAll();
-
-        throw SandboxFatalException(
-            FatalError::MEMORY_BLOCK_DOES_NOT_EXIST,
-            "No such allocation",
-            2
-        );
+        return;
     }
 
     auto alloc = it->second;
@@ -54,15 +129,23 @@ void Memory::remove(void *ptr) {
 
     auto it = _blocks.find(ptr);
     if (it == _blocks.end()) {
+        {
+            auto callstack = CallStack::trace(2);
+
+            if (_canTrackDealloc(callstack)) {
+                _exit();
+                sandbox().exitAll();
+
+                throw SandboxFatalException(
+                    FatalError::MEMORY_BLOCK_DOES_NOT_EXIST,
+                    "No such allocation",
+                    2
+                );
+            }
+        }
+
         _exit();
-
-        sandbox().exitAll();
-
-        throw SandboxFatalException(
-            FatalError::MEMORY_BLOCK_DOES_NOT_EXIST,
-            "No such allocation",
-            2
-        );
+        return;
     }
 
     _freeSize += it->second.size;
