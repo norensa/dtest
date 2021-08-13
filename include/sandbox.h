@@ -13,8 +13,8 @@ namespace dtest {
 
 struct ResourceSnapshot {
     struct Quantity {
-        size_t size;
-        size_t count;
+        size_t size = 0;
+        size_t count = 0;
     };
 
     struct {
