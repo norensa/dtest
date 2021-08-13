@@ -111,6 +111,11 @@ public:
         return *this;
     }
 
+    inline DistributedUnitTest & inProcess(bool val = true) {
+        UnitTest::inProcess(val);
+        return *this;
+    }
+
     inline DistributedUnitTest & workers(uint16_t numWorkers) {
         _numWorkers = numWorkers;
         return *this;

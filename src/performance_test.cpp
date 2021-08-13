@@ -37,7 +37,8 @@ void PerformanceTest::_driverRun() {
         [this] (const std::string &error) {
             _status = Status::FAIL;
             _errors.push_back(error);
-        }
+        },
+        ! _inProcessSandbox
     );
 
     if (! finish) _status = Status::TIMEOUT;

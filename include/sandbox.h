@@ -69,7 +69,8 @@ public:
         const std::function<void()> &func,
         const std::function<void(Message &)> &onComplete,
         const std::function<void(Message &)> &onSuccess,
-        const std::function<void(const std::string &)> &onError
+        const std::function<void(const std::string &)> &onError,
+        bool forkProcess = true
     );
 
     void resourceSnapshot(ResourceSnapshot &snapshot);

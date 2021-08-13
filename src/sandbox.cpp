@@ -93,17 +93,20 @@ bool Sandbox::run(
     const std::function<void()> &func,
     const std::function<void(Message &)> &onComplete,
     const std::function<void(Message &)> &onSuccess,
-    const std::function<void(const std::string &)> &onError
+    const std::function<void(const std::string &)> &onError,
+    bool forkProcess
 ) {
 
     bool finished = false;
     _serverSocket = Socket(0, 128);
-    pid_t pid = fork();
+    pid_t pid = forkProcess ? fork() : 0;
 
     if (pid == 0) {
-        _serverSocket.close();
+        if (forkProcess) {
+            _serverSocket.close();
 
-        signal(SIGSEGV, __signalHandler);
+            signal(SIGSEGV, __signalHandler);
+        }
 
         _clientSocket = Socket(_serverSocket.address());
 
@@ -141,67 +144,66 @@ bool Sandbox::run(
 
         _clientSocket.close();
 
-        ::exit(0);
+        if (forkProcess) ::exit(0);
     }
-    else {
-        bool done = false;
 
-        auto start = std::chrono::high_resolution_clock::now();
+    bool done = false;
+    auto start = std::chrono::high_resolution_clock::now();
+    while (! done) {
+        auto conn = _serverSocket.pollOrAcceptOrTimeout();
+        if (conn == nullptr) {
+            auto end = std::chrono::high_resolution_clock::now();
 
-        while (! done) {
-            auto conn = _serverSocket.pollOrAcceptOrTimeout();
-            if (conn == nullptr) {
-                auto end = std::chrono::high_resolution_clock::now();
-
-                if ((uint64_t) (end - start).count() > timeoutNanos) {
+            if ((uint64_t) (end - start).count() > timeoutNanos) {
+                if (forkProcess) {
                     int exitStatus;
                     if (waitpid(pid, &exitStatus, WNOHANG) != 0) {
                         kill(pid, SIGKILL);
                     }
-                    onError("Exceeded timeout of " + formatDuration(timeoutNanos));
-                    done = true;
                 }
-                continue;
+                onError("Exceeded timeout of " + formatDuration(timeoutNanos));
+                done = true;
             }
-
-            Message m;
-            try {
-                m.recv(*conn);
-                if (! m.hasData()) continue;
-            }
-            catch (...) {
-                _serverSocket.dispose(*conn);
-                continue;
-            }
-
-            MessageCode code;
-            m >> code;
-
-            switch (code) {
-            case MessageCode::COMPLETE: {
-                onSuccess(m);
-                finished = true;
-            }
-            break;
-
-            case MessageCode::ERROR: {
-                std::string reason;
-                m >> reason;
-                onError(reason);
-                finished = true;
-            }
-            break;
-
-            default: {
-                kill(pid, SIGKILL);
-                onError("An unexpected error has occurred");
-            }
-            break;
-            }
-
-            waitpid(pid, NULL, 0);
-            done = true;
+            continue;
         }
+
+        Message m;
+        try {
+            m.recv(*conn);
+            if (! m.hasData()) continue;
+        }
+        catch (...) {
+            _serverSocket.dispose(*conn);
+            continue;
+        }
+
+        MessageCode code;
+        m >> code;
+
+        switch (code) {
+        case MessageCode::COMPLETE: {
+            onSuccess(m);
+            finished = true;
+        }
+        break;
+
+        case MessageCode::ERROR: {
+            std::string reason;
+            m >> reason;
+            onError(reason);
+            finished = true;
+        }
+        break;
+
+        default: {
+            if (forkProcess) kill(pid, SIGKILL);
+            onError("An unexpected error has occurred");
+        }
+        break;
+        }
+
+        if (forkProcess) waitpid(pid, NULL, 0);
+        done = true;
     }
 
     _serverSocket.close();

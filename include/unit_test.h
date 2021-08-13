@@ -22,6 +22,8 @@ protected:
     uint64_t _bodyTime = 0;
     uint64_t _completeTime = 0;
 
+    bool _inProcessSandbox = false;
+
     virtual void _configure();
 
     void _checkMemoryLeak();
@@ -104,6 +106,11 @@ public:
 
     inline UnitTest & ignoreMemoryLeak(bool val = true) {
         _ignoreMemoryLeak = val;
+        return *this;
+    }
+
+    inline UnitTest & inProcess(bool val = true) {
+        _inProcessSandbox = val;
         return *this;
     }
 };

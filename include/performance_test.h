@@ -115,6 +115,11 @@ public:
         UnitTest::ignoreMemoryLeak(val);
         return *this;
     }
+
+    inline PerformanceTest & inProcess(bool val = true) {
+        UnitTest::inProcess(val);
+        return *this;
+    }
 };
 
 }  // end namespace dtest

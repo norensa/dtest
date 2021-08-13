@@ -85,3 +85,16 @@ unit("unit-test", "uncaught-exception")
 .body([] {
     throw std::string("error");
 });
+
+unit("unit-test", "local-test-pass")
+.inProcess()
+.body([] {
+    assert(true);
+});
+
+unit("unit-test", "local-test-fail")
+.inProcess()
+.expect(Status::FAIL)
+.body([] {
+    assert(false);
+});
