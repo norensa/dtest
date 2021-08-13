@@ -106,6 +106,9 @@ bool Sandbox::run(
             _serverSocket.close();
 
             signal(SIGSEGV, __signalHandler);
+            signal(SIGABRT, __signalHandler);
+            signal(SIGPIPE, __signalHandler);
+            signal(SIGKILL, __signalHandler);
         }
 
         _clientSocket = Socket(_serverSocket.address());
