@@ -6,7 +6,7 @@
 #include<iostream>
 using namespace dtest;
 
-thread_local bool Memory::__locked = false;
+thread_local bool Memory::_locked = false;
 
 static Memory *instance = nullptr;
 
@@ -34,7 +34,7 @@ static TrackingException deallocEx[] = {
 };
 const size_t nDeallocEx = sizeof(deallocEx) / sizeof(TrackingException);
 
-bool Memory::_canTrackAlloc(const CallStack callstack) {
+bool Memory::_canTrackAlloc(const CallStack &callstack) {
     auto s = callstack.stack();
 
     for (size_t i = 0; i < nAllocEx; ++i) {
@@ -44,7 +44,7 @@ bool Memory::_canTrackAlloc(const CallStack callstack) {
     return true;
 }
 
-bool Memory::_canTrackDealloc(const CallStack callstack) {
+bool Memory::_canTrackDealloc(const CallStack &callstack) {
     auto s = callstack.stack();
 
     for (size_t i = 0; i < nDeallocEx; ++i) {
@@ -78,13 +78,11 @@ Memory::Memory() {
 void Memory::track(void *ptr, size_t size) {
     if (! _enter()) return;
 
-    {
-        auto callstack = CallStack::trace(2);
-        if (_canTrackAlloc(callstack)) {
-            _blocks.insert({ ptr, { size, callstack }});
-            _allocateSize += size;
-            ++_allocateCount;
-        }
+    auto callstack = CallStack::trace(2);
+    if (_canTrackAlloc(callstack)) {
+        _blocks.insert({ ptr, { size, std::move(callstack) } });
+        _allocateSize += size;
+        ++_allocateCount;
     }
 
     _exit();
@@ -95,30 +93,30 @@ void Memory::retrack(void *oldPtr, void *newPtr, size_t newSize) {
 
     auto it = _blocks.find(oldPtr);
     if (it == _blocks.end()) {
+        bool error;
         {
-            auto callstack = CallStack::trace(2);
+            error = _canTrackDealloc(CallStack::trace(2));
+        }
+        _exit();
 
-            if (_canTrackDealloc(callstack)) {
-                _exit();
-                sandbox().exitAll();
+        if (error) {
+            sandbox().exitAll();
 
-                throw SandboxFatalException(
-                    FatalError::MEMORY_BLOCK_DOES_NOT_EXIST,
-                    "No such allocation",
-                    2
-                );
-            }
+            throw SandboxFatalException(
+                FatalError::MEMORY_BLOCK_DOES_NOT_EXIST,
+                "No such allocation",
+                2
+            );
         }
 
-        _exit();
         return;
     }
 
-    auto alloc = it->second;
+    auto alloc = std::move(it->second);
     size_t oldSize = alloc.size;
     alloc.size = newSize;
     _blocks.erase(it);
-    _blocks.insert({ newPtr, alloc });
+    _blocks.insert({ newPtr, std::move(alloc) });
     _allocateSize += newSize - oldSize;
 
     _exit();
@@ -129,22 +127,22 @@ void Memory::remove(void *ptr) {
 
     auto it = _blocks.find(ptr);
     if (it == _blocks.end()) {
+        bool error;
         {
-            auto callstack = CallStack::trace(2);
+            error = _canTrackDealloc(CallStack::trace(2));
+        }
+        _exit();
 
-            if (_canTrackDealloc(callstack)) {
-                _exit();
-                sandbox().exitAll();
+        if (error) {
+            sandbox().exitAll();
 
-                throw SandboxFatalException(
-                    FatalError::MEMORY_BLOCK_DOES_NOT_EXIST,
-                    "No such allocation",
-                    2
-                );
-            }
+            throw SandboxFatalException(
+                FatalError::MEMORY_BLOCK_DOES_NOT_EXIST,
+                "No such allocation",
+                2
+            );
         }
 
-        _exit();
         return;
     }
 
@@ -189,7 +187,7 @@ void * malloc(size_t __size) {
     void *ptr;
 
     ptr = libc().malloc(__size);
-    if (instance) instance->track(ptr, __size);
+    if (ptr && instance) instance->track(ptr, __size);
     return ptr;
 }
 
@@ -199,7 +197,7 @@ void * calloc(size_t __nmemb, size_t __size) {
     if (libc().calloc == nullptr) return _calloc_tmp;
 
     ptr = libc().calloc(__nmemb, __size);
-    if (instance) instance->track(ptr, __nmemb * __size);
+    if (ptr && instance) instance->track(ptr, __nmemb * __size);
     return ptr;
 }
 
@@ -207,7 +205,7 @@ void * memalign(size_t __alignment, size_t __size) {
     void *ptr;
 
     ptr = libc().memalign(__alignment, __size);
-    if (instance) instance->track(ptr, __size);
+    if (ptr && instance) instance->track(ptr, __size);
     return ptr;
 }
 
@@ -215,7 +213,7 @@ int posix_memalign(void **__memptr, size_t __alignment, size_t __size) {
     int retval;
 
     retval = libc().posix_memalign(__memptr, __alignment, __size);
-    if (instance) instance->track(*__memptr, __size);
+    if (retval && instance) instance->track(*__memptr, __size);
     return retval;
 }
 
@@ -223,7 +221,7 @@ void * valloc(size_t __size) {
     void *ptr;
 
     ptr = libc().valloc(__size);
-    if (instance) instance->track(ptr, __size);
+    if (ptr && instance) instance->track(ptr, __size);
     return ptr;
 }
 
@@ -231,7 +229,7 @@ void * pvalloc(size_t __size) {
     void *ptr;
 
     ptr = libc().pvalloc(__size);
-    if (instance) instance->track(ptr, __size);
+    if (ptr && instance) instance->track(ptr, __size);
     return ptr;
 }
 
@@ -239,7 +237,7 @@ void * aligned_alloc(size_t __alignment, size_t __size) {
     void *ptr;
 
     ptr = libc().aligned_alloc(__alignment, __size);
-    if (instance) instance->track(ptr, __size);
+    if (ptr && instance) instance->track(ptr, __size);
     return ptr;
 }
 
@@ -247,7 +245,7 @@ void * realloc(void *__ptr, size_t __size) {
     void *ptr;
 
     ptr = libc().realloc(__ptr, __size);
-    if (instance) instance->retrack(__ptr, ptr, __size);
+    if (ptr && instance) instance->retrack(__ptr, ptr, __size);
     return ptr;
 }
 
@@ -255,7 +253,7 @@ void * reallocarray(void *__ptr, size_t __nmemb, size_t __size) throw() {
     void *ptr;
 
     ptr = libc().reallocarray(__ptr, __nmemb, __size);
-    if (instance) instance->retrack(__ptr, ptr, __nmemb * __size);
+    if (ptr && instance) instance->retrack(__ptr, ptr, __nmemb * __size);
     return ptr;
 }
 

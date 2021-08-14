@@ -27,23 +27,22 @@ private:
     size_t _allocateCount = 0;
     size_t _freeCount = 0;
 
-    static thread_local bool __locked;
+    static thread_local bool _locked;
     inline bool _enter() {
-        if (! _track) return false;
-        if (__locked) return false;
-        __locked = true;
+        if (! _track || _locked) return false;
+        _locked = true;
         _mtx.lock();
         return true;
     }
 
     inline void _exit() {
         _mtx.unlock();
-        __locked = false;
+        _locked = false;
     }
 
-    bool _canTrackAlloc(const CallStack callstack);
+    bool _canTrackAlloc(const CallStack &callstack);
 
-    bool _canTrackDealloc(const CallStack callstack);
+    bool _canTrackDealloc(const CallStack &callstack);
 
 public:
 
