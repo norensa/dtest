@@ -19,7 +19,7 @@ private:
         CallStack callstack;
     };
 
-    bool _track = false;
+    volatile bool _track = false;
     std::unordered_map<void *, Allocation> _blocks;
 
     size_t _allocateSize = 0;
@@ -31,12 +31,10 @@ private:
     inline bool _enter() {
         if (! _track || _locked) return false;
         _locked = true;
-        _mtx.lock();
         return true;
     }
 
     inline void _exit() {
-        _mtx.unlock();
         _locked = false;
     }
 

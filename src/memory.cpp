@@ -80,9 +80,11 @@ void Memory::track(void *ptr, size_t size) {
 
     auto callstack = CallStack::trace(2);
     if (_canTrackAlloc(callstack)) {
+        _mtx.lock();
         _blocks.insert({ ptr, { size, std::move(callstack) } });
         _allocateSize += size;
         ++_allocateCount;
+        _mtx.unlock();
     }
 
     _exit();
@@ -90,9 +92,11 @@ void Memory::track(void *ptr, size_t size) {
 
 void Memory::retrack(void *oldPtr, void *newPtr, size_t newSize) {
     if (! _enter()) return;
+    _mtx.lock();
 
     auto it = _blocks.find(oldPtr);
     if (it == _blocks.end()) {
+        _mtx.unlock();
         bool error;
         {
             error = _canTrackDealloc(CallStack::trace(2));
@@ -119,14 +123,17 @@ void Memory::retrack(void *oldPtr, void *newPtr, size_t newSize) {
     _blocks.insert({ newPtr, std::move(alloc) });
     _allocateSize += newSize - oldSize;
 
+    _mtx.unlock();
     _exit();
 }
 
 void Memory::remove(void *ptr) {
     if (! _enter()) return;
+    _mtx.lock();
 
     auto it = _blocks.find(ptr);
     if (it == _blocks.end()) {
+        _mtx.unlock();
         bool error;
         {
             error = _canTrackDealloc(CallStack::trace(2));
@@ -150,11 +157,13 @@ void Memory::remove(void *ptr) {
     ++_freeCount;
     _blocks.erase(it);
 
+    _mtx.unlock();
     _exit();
 }
 
 void Memory::clear() {
     _enter();
+    _mtx.lock();
 
     for (const auto &block : _blocks) {
         _freeSize += block.second.size;
@@ -163,11 +172,13 @@ void Memory::clear() {
     }
     _blocks.clear();
 
+    _mtx.unlock();
     _exit();
 }
 
 std::string Memory::report() {
     _enter();
+    _mtx.lock();
 
     std::stringstream s;
 
@@ -175,6 +186,7 @@ std::string Memory::report() {
         s << "\nBlock @ " << block.first << " allocated from:\n" << block.second.callstack.toString();;
     }
 
+    _mtx.unlock();
     _exit();
     return s.str();
 }
@@ -213,7 +225,7 @@ int posix_memalign(void **__memptr, size_t __alignment, size_t __size) {
     int retval;
 
     retval = libc().posix_memalign(__memptr, __alignment, __size);
-    if (retval && instance) instance->track(*__memptr, __size);
+    if (*__memptr && instance) instance->track(*__memptr, __size);
     return retval;
 }
 
