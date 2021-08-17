@@ -14,8 +14,8 @@ void CallStack::_dispose() {
 
 void CallStack::_copy(const CallStack &rhs) {
     _len = rhs._len;
-    _stack = (void **) libc().malloc(_MAX_STACK_FRAMES * sizeof(void *));
-    memcpy(_stack, rhs._stack, _MAX_STACK_FRAMES * sizeof(void *));
+    _stack = (void **) libc().malloc(_len * sizeof(void *));
+    memcpy(_stack, rhs._stack, _len * sizeof(void *));
     _skip = rhs._skip;
 }
 
