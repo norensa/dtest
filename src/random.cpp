@@ -3,11 +3,15 @@
 #include <chrono>
 
 double dtest::frand() {
-    static thread_local uint32_t __state = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+    static thread_local uint32_t state = 0;
 
-    uint64_t product = (uint64_t) __state * 48271;
+    if (state == 0) {
+        state = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+    }
+
+    uint64_t product = (uint64_t) state * 48271;
     uint32_t x = (product & 0x7fffffff) + (product >> 31);
-    __state = x;
+    state = x;
 
     return (double) x / (double) 0x80000000;
 }
