@@ -97,18 +97,18 @@ void Memory::retrack(void *oldPtr, void *newPtr, size_t newSize) {
     auto it = _blocks.find(oldPtr);
     if (it == _blocks.end()) {
         _mtx.unlock();
-        bool error;
-        {
-            error = _canTrackDealloc(CallStack::trace(2));
-        }
+        bool error = _canTrackDealloc(CallStack::trace(2));
         _exit();
 
         if (error) {
             sandbox().exitAll();
 
+            char buf[64];
+            snprintf(buf, sizeof(buf), "memory block @ %p was never allocated", oldPtr);
+
             throw SandboxFatalException(
                 FatalError::MEMORY_BLOCK_DOES_NOT_EXIST,
-                "No such allocation",
+                buf,
                 2
             );
         }
@@ -134,18 +134,18 @@ void Memory::remove(void *ptr) {
     auto it = _blocks.find(ptr);
     if (it == _blocks.end()) {
         _mtx.unlock();
-        bool error;
-        {
-            error = _canTrackDealloc(CallStack::trace(2));
-        }
+        bool error = _canTrackDealloc(CallStack::trace(2));
         _exit();
 
         if (error) {
             sandbox().exitAll();
 
+            char buf[64];
+            snprintf(buf, sizeof(buf), "memory block @ %p was never allocated", ptr);
+
             throw SandboxFatalException(
                 FatalError::MEMORY_BLOCK_DOES_NOT_EXIST,
-                "No such allocation",
+                buf,
                 2
             );
         }
