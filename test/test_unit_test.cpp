@@ -64,7 +64,7 @@ unit("unit-test", "seg-fault-again")
 unit("unit-test", "large-report")
 .expect(Status::PASS_WITH_MEMORY_LEAK)
 .body([] {
-    for (auto i = 0; i < 500; ++i) malloc(1);
+    for (auto i = 0; i < 50; ++i) malloc(1);
 });
 
 unit("unit-test", "fail-before-dynamic-free")
@@ -103,5 +103,16 @@ unit("unit-test", "openmp")
 .body([] {
     #pragma omp parallel
     {
+    }
+});
+
+unit("unit-test", "parallel-alloc-dealloc")
+.body([] {
+    #pragma omp parallel for
+    for (auto i = 0; i < 2000; ++i) {
+        auto ptr = malloc(1);
+        uint32_t j = random() * 10;
+        while (j--);
+        free(ptr);
     }
 });

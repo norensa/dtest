@@ -3,7 +3,7 @@ BUILD_DIR = build/$(shell uname -s)-$(shell uname -m)
 INCLUDES = -Iinclude
 
 LIB_DIRS =
-LIBS = -ldl
+LIBS = -ldl -lpthread
 
 CXX = g++
 CPPFLAGS = -Werror -Wall -Winline -Wpedantic
