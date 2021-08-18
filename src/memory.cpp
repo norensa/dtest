@@ -104,7 +104,7 @@ void Memory::retrack(void *oldPtr, void *newPtr, size_t newSize) {
             sandbox().exitAll();
 
             char buf[64];
-            snprintf(buf, sizeof(buf), "memory block @ %p was never allocated", oldPtr);
+            snprintf(buf, sizeof(buf), "no valid memory block at %p", oldPtr);
 
             throw SandboxFatalException(
                 FatalError::MEMORY_BLOCK_DOES_NOT_EXIST,
@@ -141,7 +141,7 @@ void Memory::remove(void *ptr) {
             sandbox().exitAll();
 
             char buf[64];
-            snprintf(buf, sizeof(buf), "memory block @ %p was never allocated", ptr);
+            snprintf(buf, sizeof(buf), "no valid memory block at %p", ptr);
 
             throw SandboxFatalException(
                 FatalError::MEMORY_BLOCK_DOES_NOT_EXIST,
