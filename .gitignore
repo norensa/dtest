@@ -53,7 +53,7 @@ dkms.conf
 
 # binaries
 bin/
-/dtest
+/dtest*
 
 # IDE directories
 .vscode/
