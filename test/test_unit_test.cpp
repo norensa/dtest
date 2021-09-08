@@ -106,6 +106,21 @@ unit("unit-test", "openmp")
     }
 });
 
+unit("unit-test", "local-openmp")
+.inProcess()
+.body([] {
+    #pragma omp parallel
+    {
+    }
+});
+
+unit("unit-test", "openmp-after-local-openmp")
+.body([] {
+    #pragma omp parallel
+    {
+    }
+});
+
 unit("unit-test", "parallel-alloc-dealloc")
 .body([] {
     #pragma omp parallel for
@@ -116,3 +131,4 @@ unit("unit-test", "parallel-alloc-dealloc")
         free(ptr);
     }
 });
+

@@ -4,6 +4,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <util.h>
+#include <thread>
 
 using namespace dtest;
 
@@ -113,37 +114,41 @@ bool Sandbox::run(
 
         _clientSocket = Socket(_serverSocket.address());
 
-        try {
-            enter();
-            func();
-            exit();
+        auto t = std::thread([this, &func, &onComplete] {
+            try {
+                enter();
+                func();
+                exit();
 
-            Message m;
-            m << MessageCode::COMPLETE;
-            onComplete(m);
-            m.send(_clientSocket);
-        }
-        catch (const SandboxException &e) {
-            exitAll();
-            Message m;
-            m << MessageCode::ERROR
-                << std::string(e.what());
-            m.send(_clientSocket);
-        }
-        catch (const std::exception &e) {
-            exitAll();
-            Message m;
-            m << MessageCode::ERROR
-                << std::string("Detected uncaught exception: ") + e.what();
-            m.send(_clientSocket);
-        }
-        catch (...) {
-            exitAll();
-            Message m;
-            m << MessageCode::ERROR
-                << std::string("Unknown exception thrown");
-            m.send(_clientSocket);
-        }
+                Message m;
+                m << MessageCode::COMPLETE;
+                onComplete(m);
+                m.send(_clientSocket);
+            }
+            catch (const SandboxException &e) {
+                exitAll();
+                Message m;
+                m << MessageCode::ERROR
+                    << std::string(e.what());
+                m.send(_clientSocket);
+            }
+            catch (const std::exception &e) {
+                exitAll();
+                Message m;
+                m << MessageCode::ERROR
+                    << std::string("Detected uncaught exception: ") + e.what();
+                m.send(_clientSocket);
+            }
+            catch (...) {
+                exitAll();
+                Message m;
+                m << MessageCode::ERROR
+                    << std::string("Unknown exception thrown");
+                m.send(_clientSocket);
+            }
+        });
+
+        t.join();
 
         _clientSocket.close();
 
