@@ -9,48 +9,48 @@ using Status = dtest::Test::Status;
 
 #define __dtest_instance(t) static auto __dtest_concat(__unit_test__uid_, __COUNTER__) = (*(t))
 
-#define __test_1(testType, name) __dtest_instance(new testType(name))
-#define __test_2(testType, module,name) __dtest_instance(new testType(module, name))
-#define __test_(_1, _2, NAME, ...) NAME
-#define __test(testType, ...) __test_(__VA_ARGS__, __test_2, __test_1, UNUSED)(testType, __VA_ARGS__)
+#define __test_1__(testType, name) __dtest_instance(new testType(name))
+#define __test_2__(testType, module,name) __dtest_instance(new testType(module, name))
+#define __test___(_1, _2, NAME, ...) NAME
+#define __test__(testType, ...) __test___(__VA_ARGS__, __test_2__, __test_1__, UNUSED)(testType, __VA_ARGS__)
 
 ////
 
 #include <unit_test.h>
 
-#define unit(...) __test(dtest::UnitTest, __VA_ARGS__)
+#define unit(...) __test__(dtest::UnitTest, __VA_ARGS__)
 
 ////
 
 #include <performance_test.h>
 
-#define perf(...) __test(dtest::PerformanceTest, __VA_ARGS__)
+#define perf(...) __test__(dtest::PerformanceTest, __VA_ARGS__)
 
 ////
 
 #include <distributed_unit_test.h>
 
-#define dunit(...) __test(dtest::DistributedUnitTest, __VA_ARGS__)
+#define dunit(...) __test__(dtest::DistributedUnitTest, __VA_ARGS__)
 
-#define notify() dtest::Context::instance()->notify()
+#define dtest_notify() dtest::Context::instance()->notify()
 
-#define __wait_0() dtest::Context::instance()->wait()
-#define __wait_1(n) dtest::Context::instance()->wait(n)
+#define __wait_0__() dtest::Context::instance()->wait()
+#define __wait_1__(n) dtest::Context::instance()->wait(n)
 
-#define __wait(_1, NAME, ...) NAME
-#define wait(...)  __wait(__VA_ARGS__, __wait_1, __wait_0, UNUSED)(__VA_ARGS__)
+#define __wait__(_1, NAME, ...) NAME
+#define dtest_wait(...)  __wait__(__VA_ARGS__, __wait_1__, __wait_0__, UNUSED)(__VA_ARGS__)
 
-#define sendMsg(m) dtest::Context::instance()->sendUserMessage(dtest::Context::instance()->createUserMessage() << m)
-#define recvMsg() dtest::Context::instance()->getUserMessage()
+#define dtest_sendMsg(m) dtest::Context::instance()->sendUserMessage(dtest::Context::instance()->createUserMessage() << m)
+#define dtest_recvMsg() dtest::Context::instance()->getUserMessage()
 
 ////
 
 #include <random.h>
 
-#define random() dtest::frand()
+#define dtest_random() dtest::frand()
 
 ////
 
 #include <time_of.h>
 
-#define timeOf(code) dtest::timeOf(code)
+#define dtest_timeOf(code) dtest::timeOf(code)

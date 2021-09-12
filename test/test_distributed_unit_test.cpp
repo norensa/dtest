@@ -77,12 +77,12 @@ dunit("distributed-unit-test", "wait-notify")
 .dependsOn("unit-test")
 .workers(4)
 .driver([] {
-    notify();
-    wait(4);
+    dtest_notify();
+    dtest_wait(4);
 })
 .worker([] {
-    wait();
-    notify();
+    dtest_wait();
+    dtest_notify();
 });
 
 dunit("distributed-unit-test", "user-message")
@@ -91,18 +91,18 @@ dunit("distributed-unit-test", "user-message")
 .driver([] {
     int x;
     x = 1;
-    sendMsg(x);
+    dtest_sendMsg(x);
     for (auto i = 0; i < 4; ++i) {
-        recvMsg() >> x;
+        dtest_recvMsg() >> x;
         assert (x == 2);
     }
 })
 .worker([] {
     int x;
-    recvMsg() >> x;
+    dtest_recvMsg() >> x;
     assert (x == 1);
     x = 2;
-    sendMsg(x);
+    dtest_sendMsg(x);
 });
 
 static int tcp_server_sock() {
@@ -158,7 +158,7 @@ dunit("distributed-unit-test", "tcp")
 .driver([] {
     auto fd = tcp_server_sock();
     auto addr = get_sock_addr(fd);
-    sendMsg(addr);
+    dtest_sendMsg(addr);
 
     int conn = accept(fd, NULL, NULL);
     int x;
@@ -170,7 +170,7 @@ dunit("distributed-unit-test", "tcp")
 })
 .worker([] {
     sockaddr addr;
-    recvMsg() >> addr;
+    dtest_recvMsg() >> addr;
 
     auto fd = tcp_connect(addr);
     int x = 1234;
@@ -185,7 +185,7 @@ dunit("distributed-unit-test", "tcp-faulty")
 .driver([] {
     auto fd = tcp_server_sock();
     auto addr = get_sock_addr(fd);
-    sendMsg(addr);
+    dtest_sendMsg(addr);
 
     int conn = accept(fd, NULL, NULL);
     int x;
@@ -198,7 +198,7 @@ dunit("distributed-unit-test", "tcp-faulty")
 })
 .worker([] {
     sockaddr addr;
-    recvMsg() >> addr;
+    dtest_recvMsg() >> addr;
 
     auto fd = tcp_connect(addr);
     for (int i = 0; i < 1000; ++i) {
@@ -213,7 +213,7 @@ dunit("distributed-unit-test", "udp")
 .driver([] {
     auto fd = udp_server_sock();
     auto addr = get_sock_addr(fd);
-    sendMsg(addr);
+    dtest_sendMsg(addr);
 
     int x;
     recvfrom(fd, &x, sizeof(x), 0, NULL, NULL);
@@ -223,7 +223,7 @@ dunit("distributed-unit-test", "udp")
 })
 .worker([] {
     sockaddr addr;
-    recvMsg() >> addr;
+    dtest_recvMsg() >> addr;
 
     auto fd = udp_sock();
     int x = 1234;
@@ -238,7 +238,7 @@ dunit("distributed-unit-test", "udp-faulty")
 .driver([] {
     auto fd = udp_server_sock();
     auto addr = get_sock_addr(fd);
-    sendMsg(addr);
+    dtest_sendMsg(addr);
 
     int x;
     for (int i = 0; i < 1000; ++i) {
@@ -253,7 +253,7 @@ dunit("distributed-unit-test", "udp-faulty")
 })
 .worker([] {
     sockaddr addr;
-    recvMsg() >> addr;
+    dtest_recvMsg() >> addr;
 
     auto fd = udp_sock();
     for (int i = 0; i < 1000; ++i) {

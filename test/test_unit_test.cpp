@@ -42,7 +42,7 @@ unit("unit-test", "random")
 .body([] {
     double sum = 0;
     for (auto i = 0; i < 100; ++i) {
-        sum += random();
+        sum += dtest_random();
     }
     assert(sum < 100);
 });
@@ -126,7 +126,7 @@ unit("unit-test", "parallel-alloc-dealloc")
     #pragma omp parallel for
     for (auto i = 0; i < 2000; ++i) {
         auto ptr = malloc(1);
-        uint32_t j = random() * 10;
+        uint32_t j = dtest_random() * 10;
         while (j--);
         free(ptr);
     }
