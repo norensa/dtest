@@ -26,11 +26,12 @@ struct TrackingException {
 static TrackingException allocEx[] = {
     { 0, "_dl_allocate_tls", 0x2b },
     { 2, "GOMP_parallel", 0x2a },
+    { 2, "GOMP_parallel", 0x41 },
 };
 const size_t nAllocEx = sizeof(allocEx) / sizeof(TrackingException);
 
 static TrackingException deallocEx[] = {
-    { 2, "GOMP_parallel", 0x41 },
+    { 0, "", 0x0 },
 };
 const size_t nDeallocEx = sizeof(deallocEx) / sizeof(TrackingException);
 
@@ -257,7 +258,12 @@ void * realloc(void *__ptr, size_t __size) {
     void *ptr;
 
     ptr = libc().realloc(__ptr, __size);
-    if (ptr && instance) instance->retrack(__ptr, ptr, __size);
+    if (__ptr) {
+        if (ptr && instance) instance->retrack(__ptr, ptr, __size);
+    }
+    else {
+        if (ptr && instance) instance->track(ptr, __size);
+    }
     return ptr;
 }
 
@@ -265,7 +271,12 @@ void * reallocarray(void *__ptr, size_t __nmemb, size_t __size) throw() {
     void *ptr;
 
     ptr = libc().reallocarray(__ptr, __nmemb, __size);
-    if (ptr && instance) instance->retrack(__ptr, ptr, __nmemb * __size);
+    if (__ptr) {
+        if (ptr && instance) instance->retrack(__ptr, ptr, __nmemb * __size);
+    }
+    else {
+        if (ptr && instance) instance->track(ptr, __nmemb * __size);
+    }
     return ptr;
 }
 
