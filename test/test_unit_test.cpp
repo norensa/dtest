@@ -132,3 +132,10 @@ unit("unit-test", "parallel-alloc-dealloc")
     }
 });
 
+unit("unit-test", "false-tls-mem-leak")
+.body([] {
+    static thread_local int var;
+
+    var = 5;
+    assert(var == 5);
+});
