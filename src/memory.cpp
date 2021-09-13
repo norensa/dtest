@@ -32,7 +32,7 @@ static TrackingException allocEx[] = {
 const size_t nAllocEx = sizeof(allocEx) / sizeof(TrackingException);
 
 static TrackingException deallocEx[] = {
-    { 0, "", 0x0 },
+    { 2, "GOMP_parallel", 0x41 },
 };
 const size_t nDeallocEx = sizeof(deallocEx) / sizeof(TrackingException);
 
