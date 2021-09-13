@@ -33,12 +33,7 @@ using Status = dtest::Test::Status;
 #define dunit(...) __test__(dtest::DistributedUnitTest, __VA_ARGS__)
 
 #define dtest_notify() dtest::Context::instance()->notify()
-
-#define __wait_0__() dtest::Context::instance()->wait()
-#define __wait_1__(n) dtest::Context::instance()->wait(n)
-
-#define __wait__(_1, NAME, ...) NAME
-#define dtest_wait(...)  __wait__(__VA_ARGS__, __wait_1__, __wait_0__, UNUSED)(__VA_ARGS__)
+#define dtest_wait(n) dtest::Context::instance()->wait(n)
 
 #define dtest_sendMsg(m) dtest::Context::instance()->sendUserMessage(dtest::Context::instance()->createUserMessage() << m)
 #define dtest_recvMsg() dtest::Context::instance()->getUserMessage()
