@@ -17,7 +17,7 @@ void DistributedUnitTest::_configure() {
 
 void DistributedUnitTest::_workerRun() {
     auto finish = sandbox().run(
-        _timeout,
+        _timeout < 2000000000lu ? 2000000000lu : _timeout,
         [this] {
             _configure();
 

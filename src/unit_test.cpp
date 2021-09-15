@@ -32,7 +32,7 @@ void UnitTest::_checkTimeout(uint64_t time) {
 
 void UnitTest::_driverRun() {
     auto finish = sandbox().run(
-        _timeout,
+        _timeout < 2000000000lu ? 2000000000lu : _timeout,
         [this] {
             _configure();
 

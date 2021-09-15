@@ -164,10 +164,8 @@ bool Sandbox::run(
 
             if ((uint64_t) (end - start).count() > timeoutNanos) {
                 if (forkProcess) {
-                    int exitStatus;
-                    if (waitpid(pid, &exitStatus, WNOHANG) != 0) {
-                        kill(pid, SIGKILL);
-                    }
+                    kill(pid, SIGKILL);
+                    waitpid(pid, NULL, 0);
                 }
                 onError("Exceeded timeout of " + formatDuration(timeoutNanos));
                 done = true;
@@ -210,7 +208,23 @@ bool Sandbox::run(
         break;
         }
 
-        if (forkProcess) waitpid(pid, NULL, 0);
+        if (forkProcess) {
+            int res;
+            do {
+                res = waitpid(pid, NULL, WNOHANG);
+                if (res == 0) {
+                    auto end = std::chrono::high_resolution_clock::now();
+                    if ((uint64_t) (end - start).count() > timeoutNanos) {
+                        kill(pid, SIGKILL);
+                        res = waitpid(pid, NULL, 0);
+                        onError("Did not terminate properly after timeout of " + formatDuration(timeoutNanos));
+                    }
+                    else {
+                        usleep(100000);
+                    }
+                }
+            } while (res != pid);
+        }
         done = true;
     }
 
