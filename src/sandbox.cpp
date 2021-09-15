@@ -220,7 +220,7 @@ bool Sandbox::run(
                         onError("Did not terminate properly after timeout of " + formatDuration(timeoutNanos));
                     }
                     else {
-                        usleep(100000);
+                        usleep(10000);
                     }
                 }
             } while (res != pid);
