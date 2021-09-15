@@ -3,11 +3,11 @@ BUILD_DIR = build/$(shell uname -s)-$(shell uname -m)
 INCLUDES = -Iinclude
 
 LIB_DIRS =
-LIBS = -ldl -lpthread
+LIBS = -ldl
 
 CXX = g++
 CPPFLAGS = -Werror -Wall -Winline -Wpedantic
-CXXFLAGS = -march=native
+CXXFLAGS = -march=native -pthread
 
 LDFLAGS = -Wl,-E -Wl,-export-dynamic
 DEPFLAGS = -MM
