@@ -106,6 +106,11 @@ public:
         return *this;
     }
 
+    inline DistributedUnitTest & disable() {
+        UnitTest::disable();
+        return *this;
+    }
+
     inline DistributedUnitTest & ignoreMemoryLeak(bool val = true) {
         UnitTest::ignoreMemoryLeak(val);
         return *this;

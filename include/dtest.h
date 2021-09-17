@@ -18,19 +18,31 @@ using Status = dtest::Test::Status;
 
 #include <unit_test.h>
 
+#ifdef DTEST_DISABLE_ALL
+#define unit(...) __test__(dtest::UnitTest, __VA_ARGS__).disable()
+#else
 #define unit(...) __test__(dtest::UnitTest, __VA_ARGS__)
+#endif
 
 ////
 
 #include <performance_test.h>
 
+#ifdef DTEST_DISABLE_ALL
+#define perf(...) __test__(dtest::PerformanceTest, __VA_ARGS__).disable()
+#else
 #define perf(...) __test__(dtest::PerformanceTest, __VA_ARGS__)
+#endif
 
 ////
 
 #include <distributed_unit_test.h>
 
+#ifdef DTEST_DISABLE_ALL
+#define dunit(...) __test__(dtest::DistributedUnitTest, __VA_ARGS__).disable()
+#else
 #define dunit(...) __test__(dtest::DistributedUnitTest, __VA_ARGS__)
+#endif
 
 #define dtest_notify() dtest::Context::instance()->notify()
 #define dtest_wait(n) dtest::Context::instance()->wait(n)

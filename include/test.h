@@ -27,6 +27,7 @@ public:
 
     enum class Status {
         PASS,
+        SKIP,
         PASS_WITH_MEMORY_LEAK,
         TOO_SLOW,
         TIMEOUT,
@@ -41,6 +42,7 @@ protected:
 
     std::unordered_set<std::string> _dependencies;
 
+    bool _enabled = true;
     bool _success = false;
 
     Status _status = Status::PENDING;
@@ -108,6 +110,11 @@ public:
 
     inline Test & expect(Status status) {
         _expectedStatus = status;
+        return *this;
+    }
+
+    inline Test & disable() {
+        _enabled = false;
         return *this;
     }
 

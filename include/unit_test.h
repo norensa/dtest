@@ -104,6 +104,11 @@ public:
         return *this;
     }
 
+    inline UnitTest & disable() {
+        Test::disable();
+        return *this;
+    }
+
     inline UnitTest & ignoreMemoryLeak(bool val = true) {
         _ignoreMemoryLeak = val;
         return *this;

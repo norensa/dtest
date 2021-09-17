@@ -10,37 +10,44 @@ using namespace dtest;
 
 void Test::_run() {
 
-    Context::instance()->_currentTest = this;
+    if (_enabled) {
+        Context::instance()->_currentTest = this;
 
-    if (_isDriver) {
-        if (_distributed()) {
-            if (_numWorkers == 0) _numWorkers = _defaultNumWorkers;
+        if (_isDriver) {
+            if (_distributed()) {
+                if (_numWorkers == 0) _numWorkers = _defaultNumWorkers;
 
-            auto extraWorkers = DriverContext::instance->_allocateWorkers(_numWorkers);
+                auto extraWorkers = DriverContext::instance->_allocateWorkers(_numWorkers);
 
-            DriverContext::instance->_run(this);
-            _driverRun();
+                DriverContext::instance->_run(this);
+                _driverRun();
 
-            DriverContext::instance->_join(this);
-            DriverContext::instance->_deallocateWorkers(extraWorkers);
+                DriverContext::instance->_join(this);
+                DriverContext::instance->_deallocateWorkers(extraWorkers);
+            }
+            else {
+                _driverRun();
+            }
         }
         else {
-            _driverRun();
+            _workerRun();
         }
+
+        _success = _status == _expectedStatus;
+
+        std::stringstream s;
+        _report(_isDriver, s);
+        _detailedReport = s.str();
     }
     else {
-        _workerRun();
+        _status = Status::SKIP;
+        _success = true;
     }
-
-    _success = _status == _expectedStatus;
-
-    std::stringstream s;
-    _report(_isDriver, s);
-    _detailedReport = s.str();
 }
 
 std::string Test::__statusString[] = {
     "PASS",
+    "SKIP",
     "PASS (with memory leak)",
     "TOO SLOW",
     "TIMEOUT",
@@ -50,6 +57,7 @@ std::string Test::__statusString[] = {
 
 static std::string __statusStringPastTense[] = {
     "PASSED",
+    "SKIPPED",
     "PASSED (with memory leak)",
     "TOO SLOW",
     "TIMED OUT",
@@ -125,6 +133,8 @@ bool Test::runAll(std::ostream &out) {
     std::unordered_map<Status, uint32_t> unExpectedStatusSummary;
     size_t runCount = 0;
     size_t successCount = 0;
+    bool firstLog = true;
+
     while (! ready.empty()) {
 
         auto test = ready.front();
@@ -151,30 +161,41 @@ bool Test::runAll(std::ostream &out) {
 
         test->_run();
 
-        if (runCount > 0) out << ",";
-        out << "\n    {";
-        out << "\n      \"i\": " << runCount << ",";
-        out << "\n      \"name\": \"" << testname << "\",";
-        out << "\n      \"success\": " << test->_success << ",";
-        out << "\n      \"status\": \"" << statusString(test->_status) << "\",";
-        out << "\n      \"report\": {\n" << indent(test->_detailedReport, 8);
-        out << "\n      }";
-        if (! test->_childStatus.empty()) {
-            out << ",\n      \"workers\": [";
-            for (size_t i = 0; i < test->_childStatus.size(); ++i) {
-                if (i > 0) out << ",";
-
-                out << "\n        {";
-                out << "\n          \"status\": \"" << statusString(test->_childStatus[i]) << "\",";
-                out << "\n          \"report\": {\n" << indent(test->_childDetailedReport[i], 12);
-                out << "\n          }";
-                out << "\n        }";
-            }
-            out << "\n      ]";
+        if (test->_status == Status::SKIP) {
+            if (_logStatsToStderr) std::cerr << "SKIP" << "\n";
         }
-        out << "\n    }";
-        out.flush();
-        if (_logStatsToStderr) std::cerr << (test->_success ? "PASS" : "FAIL") << "\n";
+        else {
+            if (firstLog) {
+                firstLog = false;
+            }
+            else {
+                out << ",";
+            }
+
+            out << "\n    {";
+            out << "\n      \"i\": " << runCount << ",";
+            out << "\n      \"name\": \"" << testname << "\",";
+            out << "\n      \"success\": " << test->_success << ",";
+            out << "\n      \"status\": \"" << statusString(test->_status) << "\",";
+            out << "\n      \"report\": {\n" << indent(test->_detailedReport, 8);
+            out << "\n      }";
+            if (! test->_childStatus.empty()) {
+                out << ",\n      \"workers\": [";
+                for (size_t i = 0; i < test->_childStatus.size(); ++i) {
+                    if (i > 0) out << ",";
+
+                    out << "\n        {";
+                    out << "\n          \"status\": \"" << statusString(test->_childStatus[i]) << "\",";
+                    out << "\n          \"report\": {\n" << indent(test->_childDetailedReport[i], 12);
+                    out << "\n          }";
+                    out << "\n        }";
+                }
+                out << "\n      ]";
+            }
+            out << "\n    }";
+            out.flush();
+            if (_logStatsToStderr) std::cerr << (test->_success ? "PASS" : "FAIL") << "\n";
+        }
 
         if (test->_success) {
             auto it = remaining.find(test->_module);
