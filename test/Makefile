@@ -1,17 +1,7 @@
 # module name
 MODULE = dtest
 
-# dtest dir
-DTEST = ..
-
 ################################################################################
-
-BUILD_DIR = build/$(shell uname -s)-$(shell uname -m)
-
-INCLUDES = -I$(DTEST)/include
-
-LIB_DIRS =
-LIBS = 
 
 CXX = g++
 CPPFLAGS = -Werror -Wall -Winline -Wpedantic
@@ -20,8 +10,10 @@ CXXFLAGS = -std=c++11 -march=native -fPIC -fopenmp -pthread
 LDFLAGS = -Wl,-E -Wl,-export-dynamic
 DEPFLAGS = -MM
 
+BUILD_DIR = build/$(shell uname -s)-$(shell uname -m)
+
 SOURCES = $(wildcard *.cpp)
-OBJ_FILES = $(SOURCES:%.cpp=$(BUILD_DIR)/%.so)
+OBJ_FILES = $(SOURCES:%.cpp=$(BUILD_DIR)/%.dtest.so)
 
 .PHONY : all clean clean-dep
 
@@ -60,6 +52,6 @@ clean-dep :
 	sed 's,\($*\)\.o[ :]*,$(BUILD_DIR)/\1.so $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 
-$(BUILD_DIR)/%.so : %.cpp | $(BUILD_DIR)
+$(BUILD_DIR)/%.dtest.so : %.cpp $(LIB_DEPEND) | $(BUILD_DIR)
 	@echo "CXX       $(MODULE)/test/$@"
-	@$(CXX) -shared $(CPPFLAGS) $(CXXFLAGS) $(EXTRACXXFLAGS) $(INCLUDES) $< -o $@
+	@$(CXX) -shared $(CPPFLAGS) $(CXXFLAGS) $(EXTRACXXFLAGS) -I../include $< -o $@

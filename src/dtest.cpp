@@ -20,22 +20,11 @@ static void loadTests(const char *path) {
     }
 }
 
-static void findTests(const char *path, bool load = false) {
+static void findTests(const char *path) {
     struct stat st;
     stat(path, &st);
 
     if (S_ISDIR(st.st_mode)) {
-
-        if (! load) {
-            char *p = strdup(path);
-            if (strcasecmp(basename(p), "test") == 0) {
-                findTests(path, true);
-                free(p);
-                return;
-            }
-            free(p);
-        }
-
         DIR *d = opendir(path);
         struct dirent *dir;
         if (d) {
@@ -49,16 +38,18 @@ static void findTests(const char *path, bool load = false) {
                     strcpy(child, path);
                     strcat(child, "/");
                     strcat(child, dir->d_name);
-                    findTests(child, load);
+                    findTests(child);
                     free(child);
                 }
             }
             closedir(d);
         }
     }
-    else if (load) {
-        auto ext = strrchr(path, '.');
-        if (ext != NULL && strcasecmp(ext, ".so") == 0) loadTests(path);
+    else {
+        size_t len = strlen(path);
+        if (len >= 9 && strcasecmp(path + len - 9, ".dtest.so") == 0) {
+            loadTests(path);
+        }
     }
 }
 

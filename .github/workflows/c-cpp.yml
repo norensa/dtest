@@ -12,4 +12,4 @@ jobs:
     - name: make
       run: make dtest build-test-only
     - name: run tests
-      run: ./dtest
+      run: ./dtest test/build
