@@ -35,6 +35,7 @@ static TrackingException deallocEx[] = {
     { 2, "GOMP_parallel", 0x41 },
     { 0, "_dl_deallocate_tls", 0x3d },
     { 0, "_dl_deallocate_tls", 0x55 },
+    { 0, "pthread_create",  0x365 },
 };
 const size_t nDeallocEx = sizeof(deallocEx) / sizeof(TrackingException);
 
