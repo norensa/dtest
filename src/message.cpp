@@ -1,5 +1,5 @@
-#include <message.h>
-#include <sandbox.h>
+#include <dtest_core/message.h>
+#include <dtest_core/sandbox.h>
 
 using namespace dtest;
 

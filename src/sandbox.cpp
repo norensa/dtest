@@ -1,9 +1,9 @@
-#include <sandbox.h>
+#include <dtest_core/sandbox.h>
 #include <dlfcn.h>
 #include <unistd.h>
 #include <sys/wait.h>
 #include <signal.h>
-#include <util.h>
+#include <dtest_core/util.h>
 #include <thread>
 
 using namespace dtest;

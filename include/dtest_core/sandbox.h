@@ -3,11 +3,11 @@
 #include <mutex>
 #include <unordered_map>
 #include <exception>
-#include <memory.h>
+#include <dtest_core/memory.h>
 #include <sys/socket.h>
-#include <network.h>
+#include <dtest_core/network.h>
 #include <functional>
-#include <message.h>
+#include <dtest_core/message.h>
 
 namespace dtest {
 

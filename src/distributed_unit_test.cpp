@@ -1,6 +1,6 @@
-#include <distributed_unit_test.h>
-#include <util.h>
-#include <time_of.h>
+#include <dtest_core/distributed_unit_test.h>
+#include <dtest_core/util.h>
+#include <dtest_core/time_of.h>
 
 using namespace dtest;
 

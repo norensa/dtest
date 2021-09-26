@@ -1,6 +1,6 @@
-#include <network.h>
-#include <sandbox.h>
-#include <random.h>
+#include <dtest_core/network.h>
+#include <dtest_core/sandbox.h>
+#include <dtest_core/random.h>
 
 using namespace dtest;
 

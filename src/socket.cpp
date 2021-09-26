@@ -1,4 +1,4 @@
-#include <socket.h>
+#include <dtest_core/socket.h>
 
 #include <cstring>
 #include <stdexcept>

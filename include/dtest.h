@@ -1,6 +1,6 @@
 #pragma once
 
-#include <test.h>
+#include <dtest_core/test.h>
 
 using Status = dtest::Test::Status;
 
@@ -16,7 +16,7 @@ using Status = dtest::Test::Status;
 
 ////
 
-#include <unit_test.h>
+#include <dtest_core/unit_test.h>
 
 #ifdef DTEST_DISABLE_ALL
 #define unit(...) __test__(dtest::UnitTest, __VA_ARGS__).disable()
@@ -26,7 +26,7 @@ using Status = dtest::Test::Status;
 
 ////
 
-#include <performance_test.h>
+#include <dtest_core/performance_test.h>
 
 #ifdef DTEST_DISABLE_ALL
 #define perf(...) __test__(dtest::PerformanceTest, __VA_ARGS__).disable()
@@ -36,7 +36,7 @@ using Status = dtest::Test::Status;
 
 ////
 
-#include <distributed_unit_test.h>
+#include <dtest_core/distributed_unit_test.h>
 
 #ifdef DTEST_DISABLE_ALL
 #define dunit(...) __test__(dtest::DistributedUnitTest, __VA_ARGS__).disable()
@@ -52,12 +52,12 @@ using Status = dtest::Test::Status;
 
 ////
 
-#include <random.h>
+#include <dtest_core/random.h>
 
 #define dtest_random() dtest::frand()
 
 ////
 
-#include <time_of.h>
+#include <dtest_core/time_of.h>
 
 #define dtest_timeOf(code) dtest::timeOf(code)

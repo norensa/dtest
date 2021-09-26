@@ -1,4 +1,4 @@
-#include <test.h>
+#include <dtest_core/test.h>
 #include <fstream>
 #include <cstring>
 #include <unistd.h>

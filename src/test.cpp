@@ -1,8 +1,8 @@
-#include <test.h>
+#include <dtest_core/test.h>
 
 #include <algorithm>
 #include <sys/wait.h>
-#include <util.h>
+#include <dtest_core/util.h>
 
 using namespace dtest;
 

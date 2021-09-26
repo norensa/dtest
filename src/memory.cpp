@@ -1,5 +1,5 @@
-#include <memory.h>
-#include <sandbox.h>
+#include <dtest_core/memory.h>
+#include <dtest_core/sandbox.h>
 #include <sstream>
 #include <malloc.h>
 #include <dlfcn.h>

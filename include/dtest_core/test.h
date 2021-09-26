@@ -8,11 +8,11 @@
 #include <string>
 #include <functional>
 #include <stdint.h>
-#include <socket.h>
+#include <dtest_core/socket.h>
 #include <unistd.h>
-#include <sandbox.h>
-#include <lazy.h>
-#include <message.h>
+#include <dtest_core/sandbox.h>
+#include <dtest_core/lazy.h>
+#include <dtest_core/message.h>
 #include <sstream>
 
 namespace dtest {

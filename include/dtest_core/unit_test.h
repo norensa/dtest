@@ -1,6 +1,6 @@
 #pragma once
 
-#include <test.h>
+#include <dtest_core/test.h>
 
 namespace dtest {
 

@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <cstring>
 #include <cstdlib>
-#include <socket.h>
+#include <dtest_core/socket.h>
 
 #include <string>
 #include <vector>
