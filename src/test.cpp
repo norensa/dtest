@@ -132,6 +132,7 @@ bool Test::runAll(std::ostream &out) {
     std::unordered_map<Status, uint32_t> expectedStatusSummary;
     std::unordered_map<Status, uint32_t> unExpectedStatusSummary;
     size_t runCount = 0;
+    size_t skipCount = 0;
     size_t successCount = 0;
     bool firstLog = true;
 
@@ -163,6 +164,7 @@ bool Test::runAll(std::ostream &out) {
 
         if (test->_status == Status::SKIP) {
             if (_logStatsToStderr) std::cerr << "SKIP" << "\n";
+            ++skipCount;
         }
         else {
             if (firstLog) {
@@ -269,6 +271,9 @@ bool Test::runAll(std::ostream &out) {
     out.flush();
 
     if (_logStatsToStderr) {
+        successCount -= skipCount;
+        totalTestCount -= skipCount;
+
         std::string line = "";
         line.resize(80, '-');
         std::cerr << "\n" << line << "\n";
@@ -283,6 +288,10 @@ bool Test::runAll(std::ostream &out) {
 
         if (blockedCount > 0) {
             std::cerr << blockedCount << '/' << totalTestCount << " TESTS NOT RUN\n";
+        }
+
+        if (skipCount > 0) {
+            std::cerr << skipCount << " TESTS SKIPPED\n";
         }
     }
 
