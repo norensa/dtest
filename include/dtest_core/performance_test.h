@@ -116,6 +116,11 @@ public:
         return *this;
     }
 
+    inline PerformanceTest & enable() {
+        UnitTest::enable();
+        return *this;
+    }
+
     inline PerformanceTest & ignoreMemoryLeak(bool val = true) {
         UnitTest::ignoreMemoryLeak(val);
         return *this;

@@ -118,6 +118,11 @@ public:
         return *this;
     }
 
+    inline Test & enable() {
+        _enabled = true;
+        return *this;
+    }
+
     inline const std::string & name() const {
         return _name;
     }
