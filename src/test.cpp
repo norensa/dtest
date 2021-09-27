@@ -163,7 +163,11 @@ bool Test::runAll(std::ostream &out) {
         test->_run();
 
         if (test->_status == Status::SKIP) {
-            if (_logStatsToStderr) std::cerr << "SKIP" << "\n";
+            if (_logStatsToStderr) {
+                std::cerr << "\r";
+                std::cerr << std::string(80, ' ');
+                std::cerr << "\r";
+            }
             ++skipCount;
         }
         else {
