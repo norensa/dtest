@@ -214,7 +214,7 @@ bool Test::runAll(std::ostream &out) {
                         // and remove that module from their set of dependencies
                         tt->_dependencies.erase(test->_module);
                         // if no more dependencies are needed, then push to ready queue
-                        if (tt->_dependencies.empty()) ready.push_back(tt);
+                        if (tt->_dependencies.empty()) ready.push_front(tt);
                     }
                 }
             }
