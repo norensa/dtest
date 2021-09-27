@@ -8,6 +8,7 @@
 #include <dtest_core/network.h>
 #include <functional>
 #include <dtest_core/message.h>
+#include <dtest_core/buffer.h>
 
 namespace dtest {
 
@@ -36,6 +37,8 @@ class Sandbox {
 
 private:
 
+    static void __signalHandler(int sig);
+
     std::mutex _mtx;
     bool _enabled = true;
     size_t _counter = 1;
@@ -46,9 +49,48 @@ private:
     Memory _memory;
     Network _network;
 
-    static void __signalHandler(int sig);
+    int _saved_stdio[3];
+    int _sandboxed_stdio[3];
+
+    void _sandbox_stdio(const Buffer &in);
+
+    void _unsandbox_stdio(Buffer &out, Buffer &err);
 
 public:
+
+    class Options {
+        friend class Sandbox;
+
+    private:
+        bool _fork = true;
+        Buffer _in;
+        Buffer _out;
+        Buffer _err;
+
+    public:
+
+        Options & fork(bool val) {
+            _fork = val;
+            return *this;
+        }
+
+        Options & input(const Buffer &in) {
+            _in = in;
+            return *this;
+        }
+        Options & input(Buffer &&in) {
+            _in = std::move(in);
+            return *this;
+        }
+
+        Buffer & output() {
+            return _out;
+        }
+
+        Buffer & error() {
+            return _err;
+        }
+    };
 
     inline void enable() {
         _enabled = true;
@@ -70,7 +112,7 @@ public:
         const std::function<void(Message &)> &onComplete,
         const std::function<void(Message &)> &onSuccess,
         const std::function<void(const std::string &)> &onError,
-        bool forkProcess = true
+        Options &options
     );
 
     void resourceSnapshot(ResourceSnapshot &snapshot);

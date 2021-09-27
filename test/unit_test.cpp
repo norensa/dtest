@@ -1,4 +1,5 @@
 #include <dtest.h>
+#include <iostream>
 
 unit("root-test")
 .body([] {
@@ -138,4 +139,25 @@ unit("unit-test", "false-tls-mem-leak")
 
     var = 5;
     assert(var == 5);
+});
+
+unit("unit-test", "sandboxed-stdio")
+.input("x")
+.body([] {
+    char c;
+    std::cin >> c;
+    assert(c == 'x');
+    std::cout << "This is a stdout test";
+    std::cerr << "This is a stderr test";
+});
+
+unit("unit-test", "sandboxed-stdio-local")
+.inProcess()
+.input("x")
+.body([] {
+    char c;
+    std::cin >> c;
+    assert(c == 'x');
+    std::cout << "This is a stdout test";
+    std::cerr << "This is a stderr test";
 });

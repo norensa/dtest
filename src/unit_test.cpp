@@ -31,6 +31,10 @@ void UnitTest::_checkTimeout(uint64_t time) {
 }
 
 void UnitTest::_driverRun() {
+    auto opt = Sandbox::Options();
+    opt.fork(! _inProcessSandbox);
+    opt.input(_input);
+
     auto finish = sandbox().run(
         _timeout < 2000000000lu ? 2000000000lu : _timeout,
         [this] {
@@ -69,8 +73,11 @@ void UnitTest::_driverRun() {
             _status = Status::FAIL;
             _errors.push_back(error);
         },
-        ! _inProcessSandbox
+        opt
     );
+
+    _out = std::move(opt.output());
+    _err = std::move(opt.error());
 
     if (! finish) _status = Status::TIMEOUT;
 }
@@ -118,5 +125,13 @@ void UnitTest::_report(bool driver, std::stringstream &s) {
 
     if (_hasMemoryReport()) {
         s << ",\n\"memory\": {\n" << indent(_memoryReport(), 2) << "\n}";
+    }
+
+    if (_out.size() > 0) {
+        s << ",\n\"stdout\": \n" << indent(jsonify(std::string((const char *) _out.data(), _out.size())), 2);
+    }
+
+    if (_err.size() > 0) {
+        s << ",\n\"stderr\": \n" << indent(jsonify(std::string((const char *) _err.data(), _err.size())), 2);
     }
 }

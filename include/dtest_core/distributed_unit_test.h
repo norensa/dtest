@@ -121,6 +121,11 @@ public:
         return *this;
     }
 
+    inline DistributedUnitTest & input(const std::string &input) {
+        UnitTest::input(input);
+        return *this;
+    }
+
     inline DistributedUnitTest & workers(uint16_t numWorkers) {
         _numWorkers = numWorkers;
         return *this;

@@ -125,6 +125,11 @@ public:
         UnitTest::inProcess(val);
         return *this;
     }
+
+    inline PerformanceTest & input(const std::string &input) {
+        UnitTest::input(input);
+        return *this;
+    }
 };
 
 }  // end namespace dtest

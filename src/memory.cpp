@@ -28,6 +28,7 @@ static TrackingException allocEx[] = {
     { 2, "GOMP_parallel", 0x2a },
     { 2, "GOMP_parallel", 0x41 },
     { 1, "__tls_get_addr", 0x3c },
+    { 0, "_IO_file_doallocate", 0x94 },
 };
 const size_t nAllocEx = sizeof(allocEx) / sizeof(TrackingException);
 

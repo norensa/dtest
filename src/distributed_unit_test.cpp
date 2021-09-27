@@ -16,6 +16,9 @@ void DistributedUnitTest::_configure() {
 }
 
 void DistributedUnitTest::_workerRun() {
+    auto opt = Sandbox::Options();
+    opt.fork(! _inProcessSandbox);
+
     auto finish = sandbox().run(
         _timeout < 2000000000lu ? 2000000000lu : _timeout,
         [this] {
@@ -48,7 +51,7 @@ void DistributedUnitTest::_workerRun() {
             _status = Status::FAIL;
             _errors.push_back(error);
         },
-        ! _inProcessSandbox
+        opt
     );
 
     if (! finish) _status = Status::TIMEOUT;

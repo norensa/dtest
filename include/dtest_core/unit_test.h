@@ -11,6 +11,9 @@ protected:
     // configuration
     uint64_t _timeout = 10 * 1e9;       // 10 seconds
     bool _ignoreMemoryLeak = false;
+    Buffer _input;
+    Buffer _out;
+    Buffer _err;
 
     // test functions
     std::function<void()> _body;
@@ -116,6 +119,11 @@ public:
 
     inline UnitTest & inProcess(bool val = true) {
         _inProcessSandbox = val;
+        return *this;
+    }
+
+    inline UnitTest & input(const std::string &input) {
+        _input = { input.data(), input.size() };
         return *this;
     }
 };

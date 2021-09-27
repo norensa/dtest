@@ -14,6 +14,9 @@ void PerformanceTest::_checkPerformance() {
 void PerformanceTest::_driverRun() {
     UnitTest::_driverRun();
 
+    auto opt = Sandbox::Options();
+    opt.fork(! _inProcessSandbox);
+
     auto finish = sandbox().run(
         _timeout < 2000000000lu ? 2000000000lu : _timeout,
         [this] {
@@ -38,7 +41,7 @@ void PerformanceTest::_driverRun() {
             _status = Status::FAIL;
             _errors.push_back(error);
         },
-        ! _inProcessSandbox
+        opt
     );
 
     if (! finish) _status = Status::TIMEOUT;

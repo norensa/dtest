@@ -5,6 +5,7 @@
 #include <signal.h>
 #include <dtest_core/util.h>
 #include <thread>
+#include <fcntl.h>
 
 using namespace dtest;
 
@@ -61,6 +62,74 @@ void Sandbox::__signalHandler(int sig){
     }
 }
 
+static void readFully(int fd, Buffer &buf) {
+    size_t pos = 0;
+    ssize_t bytes;
+
+    do {
+        if (buf.size() < pos + 1024) buf.resize(pos + 1024);
+        bytes = read(fd, (uint8_t *) buf.data() + pos, 1024);
+        if (bytes > 0) pos += bytes;
+    } while (bytes > 0);
+
+    buf.resize(pos);
+}
+
+static void writeFully(int fd, const Buffer &buf) {
+    size_t pos = 0;
+    ssize_t bytes;
+
+    while (pos < buf.size()) {
+        bytes = write(fd, (uint8_t *) buf.data() + pos, buf.size() - pos);
+        if (bytes > 0) pos += bytes;
+    }
+}
+
+void Sandbox::_sandbox_stdio(const Buffer &in) {
+    int pipefd[2];
+
+    // stdin
+    _saved_stdio[0] = dup(0);
+    pipe2(pipefd, O_NONBLOCK);
+    dup2(pipefd[0], 0);
+    _sandboxed_stdio[0] = pipefd[1];
+    writeFully(_sandboxed_stdio[0], in);
+
+    // stdout
+    _saved_stdio[1] = dup(1);
+    pipe2(pipefd, O_NONBLOCK);
+    dup2(pipefd[1], 1);
+    _sandboxed_stdio[1] = pipefd[0];
+
+    // stderr
+    _saved_stdio[2] = dup(2);
+    pipe2(pipefd, O_NONBLOCK);
+    dup2(pipefd[1], 2);
+    _sandboxed_stdio[2] = pipefd[0];
+}
+
+void Sandbox::_unsandbox_stdio(Buffer &out, Buffer &err) {
+    // stdin
+    close(0);
+    close(_sandboxed_stdio[0]);
+    dup2(_saved_stdio[0], 0);
+    close(_saved_stdio[0]);
+
+    // stdout
+    close(1);
+    readFully(_sandboxed_stdio[1], out);
+    close(_sandboxed_stdio[1]);
+    dup2(_saved_stdio[1], 1);
+    close(_saved_stdio[1]);
+
+    // stderr
+    close(2);
+    readFully(_sandboxed_stdio[2], err);
+    close(_sandboxed_stdio[2]);
+    dup2(_saved_stdio[2], 2);
+    close(_saved_stdio[2]);
+}
+
 void Sandbox::enter() {
     _mtx.lock();
     --_counter;
@@ -95,15 +164,19 @@ bool Sandbox::run(
     const std::function<void(Message &)> &onComplete,
     const std::function<void(Message &)> &onSuccess,
     const std::function<void(const std::string &)> &onError,
-    bool forkProcess
+    Sandbox::Options &options
 ) {
 
     bool finished = false;
+
+    _sandbox_stdio(options._in);
+
     _serverSocket = Socket(0, 128);
-    pid_t pid = forkProcess ? fork() : 0;
+
+    pid_t pid = options._fork ? fork() : 0;
 
     if (pid == 0) {
-        if (forkProcess) {
+        if (options._fork) {
             _serverSocket.close();
 
             signal(SIGSEGV, __signalHandler);
@@ -152,7 +225,7 @@ bool Sandbox::run(
 
         _clientSocket.close();
 
-        if (forkProcess) ::exit(0);
+        if (options._fork) ::exit(0);
     }
 
     bool done = false;
@@ -163,7 +236,7 @@ bool Sandbox::run(
             auto end = std::chrono::high_resolution_clock::now();
 
             if ((uint64_t) (end - start).count() > timeoutNanos) {
-                if (forkProcess) {
+                if (options._fork) {
                     kill(pid, SIGKILL);
                     waitpid(pid, NULL, 0);
                 }
@@ -202,13 +275,13 @@ bool Sandbox::run(
         break;
 
         default: {
-            if (forkProcess) kill(pid, SIGKILL);
+            if (options._fork) kill(pid, SIGKILL);
             onError("An unexpected error has occurred");
         }
         break;
         }
 
-        if (forkProcess) {
+        if (options._fork) {
             int res;
             do {
                 res = waitpid(pid, NULL, WNOHANG);
@@ -229,6 +302,9 @@ bool Sandbox::run(
     }
 
     _serverSocket.close();
+
+    _unsandbox_stdio(options._out, options._err);
+
     return finished;
 }
 
