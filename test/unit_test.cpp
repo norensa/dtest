@@ -107,6 +107,15 @@ unit("unit-test", "openmp")
     }
 });
 
+unit("unit-test", "openmp-memleak")
+.expect(Status::PASS_WITH_MEMORY_LEAK)
+.body([] {
+    #pragma omp parallel
+    {
+        malloc(1);
+    }
+});
+
 unit("unit-test", "local-openmp")
 .inProcess()
 .body([] {

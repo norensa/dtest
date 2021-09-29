@@ -1,20 +1,24 @@
 #include <dtest_core/memory.h>
 #include <dtest_core/sandbox.h>
 #include <sstream>
-#include <malloc.h>
 #include <dlfcn.h>
-#include<iostream>
+#include <elf.h>
+#include <link.h>
+
 using namespace dtest;
 
 thread_local bool Memory::_locked = false;
 
-static Memory *instance = nullptr;
+namespace dtest {
+    Memory *_mmgr_instance = nullptr;
+}
 
 struct TrackingException {
     size_t stackPos;
     const char *name;
     size_t offset;
-    void *address = nullptr;
+    void *addressLow = nullptr;
+    void *addressHigh = nullptr;
 
     TrackingException(size_t stackPos, const char *name, size_t offset)
     :   stackPos(stackPos),
@@ -24,19 +28,19 @@ struct TrackingException {
 };
 
 static TrackingException allocEx[] = {
-    { 0, "_dl_allocate_tls", 0x2b },
+    { 0, "_dl_allocate_tls", (size_t) -1 },
     { 2, "GOMP_parallel", 0x2a },
     { 2, "GOMP_parallel", 0x41 },
     { 1, "__tls_get_addr", 0x3c },
-    { 0, "_IO_file_doallocate", 0x94 },
+    { 0, "_IO_file_doallocate", (size_t) -1 },
+
 };
 const size_t nAllocEx = sizeof(allocEx) / sizeof(TrackingException);
 
 static TrackingException deallocEx[] = {
-    { 2, "GOMP_parallel", 0x41 },
-    { 0, "_dl_deallocate_tls", 0x3d },
-    { 0, "_dl_deallocate_tls", 0x55 },
-    { 0, "pthread_create",  0x365 },
+    { 0, "_dl_deallocate_tls", (size_t) -1 },
+    { 0, "_dl_deallocate_tls", (size_t) -1 },
+    { 0, "pthread_create", (size_t) -1 },
 };
 const size_t nDeallocEx = sizeof(deallocEx) / sizeof(TrackingException);
 
@@ -44,7 +48,10 @@ bool Memory::_canTrackAlloc(const CallStack &callstack) {
     auto s = callstack.stack();
 
     for (size_t i = 0; i < nAllocEx; ++i) {
-        if (s[allocEx[i].stackPos] == allocEx[i].address) return false;
+        if (
+            s[allocEx[i].stackPos] >= allocEx[i].addressLow
+            && s[allocEx[i].stackPos] < allocEx[i].addressHigh
+        ) return false;
     }
 
     return true;
@@ -54,7 +61,10 @@ bool Memory::_canTrackDealloc(const CallStack &callstack) {
     auto s = callstack.stack();
 
     for (size_t i = 0; i < nDeallocEx; ++i) {
-        if (s[deallocEx[i].stackPos] == deallocEx[i].address) return false;
+        if (
+            s[deallocEx[i].stackPos] >= deallocEx[i].addressLow
+            && s[deallocEx[i].stackPos] < deallocEx[i].addressHigh
+        ) return false;
     }
 
     return true;
@@ -62,22 +72,40 @@ bool Memory::_canTrackDealloc(const CallStack &callstack) {
 
 void Memory::reinitialize() {
     for (size_t i = 0; i < nAllocEx; ++i) {
-        allocEx[i].address = dlsym(RTLD_NEXT, allocEx[i].name);
-        if (allocEx[i].address != nullptr) {
-            allocEx[i].address = (char *) allocEx[i].address + allocEx[i].offset;
+        allocEx[i].addressLow = dlsym(RTLD_NEXT, allocEx[i].name);
+        if (allocEx[i].addressLow != nullptr) {
+            if (allocEx[i].offset == (size_t) -1) {
+                Dl_info dli;
+                ElfW(Sym) *sym;
+                dladdr1(allocEx[i].addressLow, &dli, (void **) &sym, RTLD_DL_SYMENT);
+                allocEx[i].addressHigh = (char *) allocEx[i].addressLow + sym->st_size;
+            }
+            else {
+                allocEx[i].addressLow = (char *) allocEx[i].addressLow + allocEx[i].offset;
+                allocEx[i].addressHigh = (char *) allocEx[i].addressLow + 1;
+            }
         }
     }
 
     for (size_t i = 0; i < nDeallocEx; ++i) {
-        deallocEx[i].address = dlsym(RTLD_NEXT, deallocEx[i].name);
-        if (deallocEx[i].address != nullptr) {
-            deallocEx[i].address = (char *) deallocEx[i].address + deallocEx[i].offset;
+        deallocEx[i].addressLow = dlsym(RTLD_NEXT, deallocEx[i].name);
+        if (deallocEx[i].addressLow != nullptr) {
+            if (deallocEx[i].offset == (size_t) -1) {
+                Dl_info dli;
+                ElfW(Sym) *sym;
+                dladdr1(deallocEx[i].addressLow, &dli, (void **) &sym, RTLD_DL_SYMENT);
+                deallocEx[i].addressHigh = (char *) deallocEx[i].addressLow + sym->st_size;
+            }
+            else {
+                deallocEx[i].addressLow = (char *) deallocEx[i].addressLow + deallocEx[i].offset;
+                deallocEx[i].addressHigh = (char *) deallocEx[i].addressLow + 1;
+            }
         }
     }
 }
 
 Memory::Memory() {
-    instance = this;
+    _mmgr_instance = this;
     reinitialize();
 }
 
@@ -196,203 +224,3 @@ std::string Memory::report() {
     _exit();
     return s.str();
 }
-
-// malloc & friends
-
-static char _calloc_tmp[2048];      // for dlsym, while we find calloc
-
-void * malloc(size_t __size) {
-    void *ptr;
-
-    ptr = libc().malloc(__size);
-    if (ptr && instance) instance->track(ptr, __size);
-    return ptr;
-}
-
-void * calloc(size_t __nmemb, size_t __size) {
-    void *ptr;
-
-    if (libc().calloc == nullptr) return _calloc_tmp;
-
-    ptr = libc().calloc(__nmemb, __size);
-    if (ptr && instance) instance->track(ptr, __nmemb * __size);
-    return ptr;
-}
-
-void * memalign(size_t __alignment, size_t __size) {
-    void *ptr;
-
-    ptr = libc().memalign(__alignment, __size);
-    if (ptr && instance) instance->track(ptr, __size);
-    return ptr;
-}
-
-int posix_memalign(void **__memptr, size_t __alignment, size_t __size) {
-    int retval;
-
-    retval = libc().posix_memalign(__memptr, __alignment, __size);
-    if (*__memptr && instance) instance->track(*__memptr, __size);
-    return retval;
-}
-
-void * valloc(size_t __size) {
-    void *ptr;
-
-    ptr = libc().valloc(__size);
-    if (ptr && instance) instance->track(ptr, __size);
-    return ptr;
-}
-
-void * pvalloc(size_t __size) {
-    void *ptr;
-
-    ptr = libc().pvalloc(__size);
-    if (ptr && instance) instance->track(ptr, __size);
-    return ptr;
-}
-
-void * aligned_alloc(size_t __alignment, size_t __size) {
-    void *ptr;
-
-    ptr = libc().aligned_alloc(__alignment, __size);
-    if (ptr && instance) instance->track(ptr, __size);
-    return ptr;
-}
-
-void * realloc(void *__ptr, size_t __size) {
-    void *ptr;
-
-    ptr = libc().realloc(__ptr, __size);
-    if (__ptr) {
-        if (ptr && instance) instance->retrack(__ptr, ptr, __size);
-    }
-    else {
-        if (ptr && instance) instance->track(ptr, __size);
-    }
-    return ptr;
-}
-
-void * reallocarray(void *__ptr, size_t __nmemb, size_t __size) throw() {
-    void *ptr;
-
-    ptr = libc().reallocarray(__ptr, __nmemb, __size);
-    if (__ptr) {
-        if (ptr && instance) instance->retrack(__ptr, ptr, __nmemb * __size);
-    }
-    else {
-        if (ptr && instance) instance->track(ptr, __nmemb * __size);
-    }
-    return ptr;
-}
-
-void free(void *__ptr) {
-
-    if (__ptr == _calloc_tmp) return;
-
-    if (__ptr && instance) instance->remove(__ptr);
-    libc().free(__ptr);
-}
-
-// operator new overrides /////////////////////////////////////////////////////
-
-void * operator new(size_t count) {
-    return malloc(count);
-}
-
-void * operator new[](size_t count) {
-    return operator new(count);
-}
-
-#if (__cplusplus >= 201703L)
-void* operator new(std::size_t count, std::align_val_t al) {
-    return memalign((size_t) al, count);
-}
-#endif
-
-#if (__cplusplus >= 201703L)
-void* operator new[](std::size_t count, std::align_val_t al) {
-    return operator new(count, al);
-}
-#endif
-
-void* operator new(std::size_t count, const std::nothrow_t &) noexcept {
-    return operator new(count);
-}
-
-void* operator new[](std::size_t count, const std::nothrow_t &) noexcept {
-    return operator new(count);
-}
-
-#if (__cplusplus >= 201703L)
-void* operator new(std::size_t count, std::align_val_t al, const std::nothrow_t &) {
-    return operator new(count, al);
-}
-#endif
-
-#if (__cplusplus >= 201703L)
-void* operator new[](std::size_t count, std::align_val_t al, const std::nothrow_t &) {
-    return operator new(count, al);
-}
-#endif
-
-// operator delete overrides //////////////////////////////////////////////////
-
-void operator delete(void *ptr) noexcept {
-    free(ptr);
-}
-
-void operator delete[](void *ptr) noexcept {
-    operator delete(ptr);
-}
-
-#if (__cplusplus >= 201703L)
-void operator delete(void *ptr, std::align_val_t al) noexcept {
-    operator delete(ptr);
-}
-#endif
-
-#if (__cplusplus >= 201703L)
-void operator delete[](void *ptr, std::align_val_t al) noexcept {
-    operator delete(ptr);
-}
-#endif
-
-void operator delete(void *ptr, size_t size) noexcept {
-    operator delete(ptr);
-}
-
-void operator delete[](void *ptr, size_t size) noexcept {
-    operator delete(ptr);
-}
-
-#if (__cplusplus >= 201703L)
-void operator delete(void *ptr, std::size_t sz, std::align_val_t al) noexcept {
-    operator delete(ptr);
-}
-#endif
-
-#if (__cplusplus >= 201703L)
-void operator delete[](void *ptr, std::size_t sz, std::align_val_t al) noexcept {
-    operator delete(ptr);
-}
-#endif
-
-void operator delete(void *ptr, const std::nothrow_t &) noexcept {
-    operator delete(ptr);
-}
-
-void operator delete[](void *ptr, const std::nothrow_t &) noexcept {
-    operator delete(ptr);
-}
-
-#if (__cplusplus >= 201703L)
-void operator delete(void *ptr, std::align_val_t al, const std::nothrow_t &) noexcept {
-    operator delete(ptr);
-}
-#endif
-
-#if (__cplusplus >= 201703L)
-void operator delete[](void *ptr, std::align_val_t al, const std::nothrow_t &) noexcept {
-    operator delete(ptr);
-}
-#endif

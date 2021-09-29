@@ -14,6 +14,9 @@ DEPFLAGS = -MM
 
 SOURCES = $(wildcard src/*.cpp)
 OBJ_FILES = $(SOURCES:src/%.cpp=$(BUILD_DIR)/%.o)
+OBJ_FILES_CXX11 = $(SOURCES:src/%.cpp=$(BUILD_DIR)/cxx11/%.o)
+OBJ_FILES_CXX14 = $(SOURCES:src/%.cpp=$(BUILD_DIR)/cxx14/%.o)
+OBJ_FILES_CXX17 = $(SOURCES:src/%.cpp=$(BUILD_DIR)/cxx17/%.o)
 
 BIN_DIR := bin/$(shell uname -s)-$(shell uname -m)
 
@@ -51,7 +54,11 @@ clean-dep :
 
 # dirs
 
-.dep $(BUILD_DIR) $(BUILD_DIR)/cxx11 $(BUILD_DIR)/cxx14 $(BUILD_DIR)/cxx17 $(BIN_DIR):
+.dep $(BUILD_DIR) $(BUILD_DIR) $(BIN_DIR):
+	@echo "MKDIR     dtest/$@/"
+	@mkdir -p $@
+
+$(BUILD_DIR)/%:
 	@echo "MKDIR     dtest/$@/"
 	@mkdir -p $@
 
@@ -69,17 +76,17 @@ $(BIN_DIR)/dtest: $(OBJ_FILES) | $(BIN_DIR)
 	@echo "LD        dtest/$@"
 	@$(CXX) $(CXXFLAGS) $(EXTRACXXFLAGS) $(LDFLAGS) $(LIB_DIRS) $(OBJ_FILES) $(LIBS) -o $@
 
-$(BIN_DIR)/dtest-cxx11: $(SOURCES:src/%.cpp=$(BUILD_DIR)/cxx11/%.o) | $(BIN_DIR)
+$(BIN_DIR)/dtest-cxx11: $(OBJ_FILES_CXX11) $(LIB_DIR)/cxx11/libdtest.a | $(BIN_DIR)
 	@echo "LD        dtest/$@"
-	@$(CXX) -std=c++11 $(CXXFLAGS) $(EXTRACXXFLAGS) $(LDFLAGS) $(LIB_DIRS) $(SOURCES:src/%.cpp=$(BUILD_DIR)/cxx11/%.o) $(LIBS) -o $@
+	@$(CXX) -std=c++11 $(CXXFLAGS) $(EXTRACXXFLAGS) $(LDFLAGS) $(LIB_DIRS) $(OBJ_FILES_CXX11) $(LIBS) -o $@
 
-$(BIN_DIR)/dtest-cxx14: $(SOURCES:src/%.cpp=$(BUILD_DIR)/cxx14/%.o) | $(BIN_DIR)
+$(BIN_DIR)/dtest-cxx14: $(OBJ_FILES_CXX14) $(LIB_DIR)/cxx14/libdtest.a | $(BIN_DIR)
 	@echo "LD        dtest/$@"
-	@$(CXX) -std=c++14 $(CXXFLAGS) $(EXTRACXXFLAGS) $(LDFLAGS) $(LIB_DIRS) $(SOURCES:src/%.cpp=$(BUILD_DIR)/cxx14/%.o) $(LIBS) -o $@
+	@$(CXX) -std=c++14 $(CXXFLAGS) $(EXTRACXXFLAGS) $(LDFLAGS) $(LIB_DIRS) $(OBJ_FILES_CXX14) $(LIBS) -o $@
 
-$(BIN_DIR)/dtest-cxx17: $(SOURCES:src/%.cpp=$(BUILD_DIR)/cxx17/%.o) | $(BIN_DIR)
+$(BIN_DIR)/dtest-cxx17: $(OBJ_FILES_CXX17) $(LIB_DIR)/cxx17/libdtest.a | $(BIN_DIR)
 	@echo "LD        dtest/$@"
-	@$(CXX) -std=c++17 $(CXXFLAGS) $(EXTRACXXFLAGS) $(LDFLAGS) $(LIB_DIRS) $(SOURCES:src/%.cpp=$(BUILD_DIR)/cxx17/%.o) $(LIBS) -o $@
+	@$(CXX) -std=c++17 $(CXXFLAGS) $(EXTRACXXFLAGS) $(LDFLAGS) $(LIB_DIRS) $(OBJ_FILES_CXX17) $(LIBS) -o $@
 
 .dep/%.d : src/%.cpp | .dep
 	@echo "DEP       dtest/$@"
