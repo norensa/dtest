@@ -76,15 +76,15 @@ $(BIN_DIR)/dtest: $(OBJ_FILES) | $(BIN_DIR)
 	@echo "LD        dtest/$@"
 	@$(CXX) $(CXXFLAGS) $(EXTRACXXFLAGS) $(LDFLAGS) $(LIB_DIRS) $(OBJ_FILES) $(LIBS) -o $@
 
-$(BIN_DIR)/dtest-cxx11: $(OBJ_FILES_CXX11) $(LIB_DIR)/cxx11/libdtest.a | $(BIN_DIR)
+$(BIN_DIR)/dtest-cxx11: $(OBJ_FILES_CXX11) | $(BIN_DIR)
 	@echo "LD        dtest/$@"
 	@$(CXX) -std=c++11 $(CXXFLAGS) $(EXTRACXXFLAGS) $(LDFLAGS) $(LIB_DIRS) $(OBJ_FILES_CXX11) $(LIBS) -o $@
 
-$(BIN_DIR)/dtest-cxx14: $(OBJ_FILES_CXX14) $(LIB_DIR)/cxx14/libdtest.a | $(BIN_DIR)
+$(BIN_DIR)/dtest-cxx14: $(OBJ_FILES_CXX14) | $(BIN_DIR)
 	@echo "LD        dtest/$@"
 	@$(CXX) -std=c++14 $(CXXFLAGS) $(EXTRACXXFLAGS) $(LDFLAGS) $(LIB_DIRS) $(OBJ_FILES_CXX14) $(LIBS) -o $@
 
-$(BIN_DIR)/dtest-cxx17: $(OBJ_FILES_CXX17) $(LIB_DIR)/cxx17/libdtest.a | $(BIN_DIR)
+$(BIN_DIR)/dtest-cxx17: $(OBJ_FILES_CXX17) | $(BIN_DIR)
 	@echo "LD        dtest/$@"
 	@$(CXX) -std=c++17 $(CXXFLAGS) $(EXTRACXXFLAGS) $(LDFLAGS) $(LIB_DIRS) $(OBJ_FILES_CXX17) $(LIBS) -o $@
 
