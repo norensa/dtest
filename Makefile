@@ -54,11 +54,7 @@ clean-dep :
 
 # dirs
 
-.dep $(BUILD_DIR) $(BUILD_DIR) $(BIN_DIR):
-	@echo "MKDIR     dtest/$@/"
-	@mkdir -p $@
-
-$(BUILD_DIR)/%:
+.dep $(BUILD_DIR) $(BUILD_DIR) $(BUILD_DIR)/cxx11 $(BUILD_DIR)/cxx14 $(BUILD_DIR)/cxx17 $(BIN_DIR):
 	@echo "MKDIR     dtest/$@/"
 	@mkdir -p $@
 
