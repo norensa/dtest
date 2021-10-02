@@ -24,8 +24,8 @@ DEPFLAGS = -MM
 
 BUILD_DIR = build/$(shell uname -s)-$(shell uname -m)
 
-SOURCES = $(wildcard *.cpp)
-OBJ_FILES = $(SOURCES:%.cpp=$(BUILD_DIR)/%.dtest.so)
+SOURCES = $(wildcard *.dtest.cpp)
+OBJ_FILES = $(SOURCES:%.dtest.cpp=$(BUILD_DIR)/%.dtest.so)
 
 .PHONY : all clean clean-dep dtest
 
@@ -71,6 +71,6 @@ dtest:
 	sed 's,\($*\)\.o[ :]*,$(BUILD_DIR)/\1.so $@ : ,g' < $@.$$$$ > $@; \
 	rm -f $@.$$$$
 
-$(BUILD_DIR)/%.dtest.so : %.cpp $(LIB_DEPEND) | $(BUILD_DIR) dtest
+$(BUILD_DIR)/%.dtest.so : %.dtest.cpp $(LIB_DEPEND) | $(BUILD_DIR) dtest
 	@echo "CXX       $(MODULE)/test/$@"
 	@$(CXX) -shared $(CPPFLAGS) $(CXXFLAGS) $(EXTRACXXFLAGS) -Idtest/include $(INCLUDES) $< $(LD_FLAGS) $(LIB_DIRS) $(LIBS) -o $@
