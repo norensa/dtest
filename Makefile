@@ -64,7 +64,15 @@ dtest: $(BIN_DIR)/dtest
 	@echo "LN        dtest/$@"
 	@ln -sf $(BIN_DIR)/$@ $@
 
-dtest-%: $(BIN_DIR)/dtest-%
+dtest-cxx11: $(BIN_DIR)/dtest-cxx11
+	@echo "LN        dtest/$@"
+	@ln -sf $(BIN_DIR)/$@ $@
+
+dtest-cxx14: $(BIN_DIR)/dtest-cxx14
+	@echo "LN        dtest/$@"
+	@ln -sf $(BIN_DIR)/$@ $@
+
+dtest-cxx17: $(BIN_DIR)/dtest-cxx17
 	@echo "LN        dtest/$@"
 	@ln -sf $(BIN_DIR)/$@ $@
 
