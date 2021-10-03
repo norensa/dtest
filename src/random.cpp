@@ -13,7 +13,8 @@ double dtest::frand() {
     uint32_t x = (product & 0x7fffffff) + (product >> 31);
     state = x;
 
-    return (double) x / (double) 0x80000000;
+    double retval = (double) x / (double) 0x80000000;
+    return retval > 1.0 ? 1.0 : retval;
 }
 
 double dtest::frand_expDist(double lambda) {
