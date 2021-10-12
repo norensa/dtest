@@ -43,11 +43,17 @@ dunit("distributed-unit-test", "mem-leak")
 .dependsOn("unit-test")
 .expect(Status::PASS_WITH_MEMORY_LEAK)
 .driver([] {
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wunused-result"
     malloc(1);
+    #pragma GCC diagnostic pop
     assert(true);
 })
 .worker([] {
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wunused-result"
     malloc(1);
+    #pragma GCC diagnostic pop
     assert(true);
 });
 
@@ -55,7 +61,10 @@ dunit("distributed-unit-test", "driver-mem-leak")
 .dependsOn("unit-test")
 .expect(Status::PASS_WITH_MEMORY_LEAK)
 .driver([] {
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wunused-result"
     malloc(1);
+    #pragma GCC diagnostic pop
     assert(true);
 })
 .worker([] {
@@ -69,7 +78,10 @@ dunit("distributed-unit-test", "worker-mem-leak")
     assert(true);
 })
 .worker([] {
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wunused-result"
     malloc(1);
+    #pragma GCC diagnostic pop
     assert(true);
 });
 
@@ -123,7 +135,7 @@ static int tcp_connect(const sockaddr &addr) {
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     assert(fd != -1);
 
-    assert(connect(fd, &addr, sizeof(sockaddr)) != -1); 
+    assert(connect(fd, &addr, sizeof(sockaddr)) != -1);
 
     return fd;
 }

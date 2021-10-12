@@ -25,13 +25,19 @@ unit("unit-test", "timeout")
 unit("unit-test", "mem-leak")
 .expect(Status::PASS_WITH_MEMORY_LEAK)
 .body([] {
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wunused-result"
     malloc(1);
+    #pragma GCC diagnostic pop
 });
 
 unit("unit-test", "invalid-free")
 .expect(Status::FAIL)
 .body([] {
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wfree-nonheap-object"
     free((void *) 0xdead);
+    #pragma GCC diagnostic pop
 });
 
 unit("unit-test", "error-message")
@@ -65,7 +71,12 @@ unit("unit-test", "seg-fault-again")
 unit("unit-test", "large-report")
 .expect(Status::PASS_WITH_MEMORY_LEAK)
 .body([] {
-    for (auto i = 0; i < 50; ++i) malloc(1);
+    for (auto i = 0; i < 50; ++i) {
+        #pragma GCC diagnostic push
+        #pragma GCC diagnostic ignored "-Wunused-result"
+        malloc(1);
+        #pragma GCC diagnostic pop
+    }
 });
 
 unit("unit-test", "fail-before-dynamic-free")
@@ -112,7 +123,10 @@ unit("unit-test", "openmp-memleak")
 .body([] {
     #pragma omp parallel
     {
+        #pragma GCC diagnostic push
+        #pragma GCC diagnostic ignored "-Wunused-result"
         malloc(1);
+        #pragma GCC diagnostic pop
     }
 });
 
