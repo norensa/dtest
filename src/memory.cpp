@@ -1,7 +1,6 @@
 #include <dtest_core/memory.h>
 #include <dtest_core/sandbox.h>
 #include <sstream>
-#include <dlfcn.h>
 #include <elf.h>
 #include <link.h>
 
@@ -73,36 +72,42 @@ bool Memory::_canTrackDealloc(const CallStack &callstack) {
     return true;
 }
 
-void Memory::reinitialize() {
+void Memory::reinitialize(void *handle) {
     for (size_t i = 0; i < nAllocEx; ++i) {
-        allocEx[i].addressLow = dlsym(RTLD_NEXT, allocEx[i].name);
-        if (allocEx[i].addressLow != nullptr) {
-            if (allocEx[i].offset == (size_t) -1) {
-                Dl_info dli;
-                ElfW(Sym) *sym;
-                dladdr1(allocEx[i].addressLow, &dli, (void **) &sym, RTLD_DL_SYMENT);
-                allocEx[i].addressHigh = (char *) allocEx[i].addressLow + sym->st_size;
-            }
-            else {
-                allocEx[i].addressLow = (char *) allocEx[i].addressLow + allocEx[i].offset;
-                allocEx[i].addressHigh = (char *) allocEx[i].addressLow + 1;
-            }
+        if (allocEx[i].addressLow != nullptr) continue;
+
+        allocEx[i].addressLow = dlsym(handle, allocEx[i].name);
+
+        if (allocEx[i].addressLow == nullptr) continue;
+
+        if (allocEx[i].offset == (size_t) -1) {
+            Dl_info dli;
+            ElfW(Sym) *sym;
+            dladdr1(allocEx[i].addressLow, &dli, (void **) &sym, RTLD_DL_SYMENT);
+            allocEx[i].addressHigh = (char *) allocEx[i].addressLow + sym->st_size;
+        }
+        else {
+            allocEx[i].addressLow = (char *) allocEx[i].addressLow + allocEx[i].offset;
+            allocEx[i].addressHigh = (char *) allocEx[i].addressLow + 1;
         }
     }
 
     for (size_t i = 0; i < nDeallocEx; ++i) {
-        deallocEx[i].addressLow = dlsym(RTLD_NEXT, deallocEx[i].name);
-        if (deallocEx[i].addressLow != nullptr) {
-            if (deallocEx[i].offset == (size_t) -1) {
-                Dl_info dli;
-                ElfW(Sym) *sym;
-                dladdr1(deallocEx[i].addressLow, &dli, (void **) &sym, RTLD_DL_SYMENT);
-                deallocEx[i].addressHigh = (char *) deallocEx[i].addressLow + sym->st_size;
-            }
-            else {
-                deallocEx[i].addressLow = (char *) deallocEx[i].addressLow + deallocEx[i].offset;
-                deallocEx[i].addressHigh = (char *) deallocEx[i].addressLow + 1;
-            }
+        if (deallocEx[i].addressLow != nullptr) continue;
+
+        deallocEx[i].addressLow = dlsym(handle, deallocEx[i].name);
+
+        if (deallocEx[i].addressLow == nullptr) continue;
+
+        if (deallocEx[i].offset == (size_t) -1) {
+            Dl_info dli;
+            ElfW(Sym) *sym;
+            dladdr1(deallocEx[i].addressLow, &dli, (void **) &sym, RTLD_DL_SYMENT);
+            deallocEx[i].addressHigh = (char *) deallocEx[i].addressLow + sym->st_size;
+        }
+        else {
+            deallocEx[i].addressLow = (char *) deallocEx[i].addressLow + deallocEx[i].offset;
+            deallocEx[i].addressHigh = (char *) deallocEx[i].addressLow + 1;
         }
     }
 }

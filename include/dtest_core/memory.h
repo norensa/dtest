@@ -4,6 +4,7 @@
 #include <mutex>
 #include <unordered_map>
 #include <string>
+#include <dlfcn.h>
 
 namespace dtest {
 
@@ -44,7 +45,7 @@ private:
 
 public:
 
-    static void reinitialize();
+    static void reinitialize(void *handle = RTLD_DEFAULT);
 
     Memory();
 

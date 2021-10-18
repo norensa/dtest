@@ -13,11 +13,12 @@ using namespace dtest;
 static void loadTests(const char *path) {
     std::cerr << "Loading " << path << "\n";
 
-    void *handle = dlopen(path, RTLD_NOW | RTLD_GLOBAL);
+    void *handle = dlopen(path, RTLD_NOW | RTLD_LOCAL);
     if (handle == NULL) {
         std::cerr << dlerror() << std::endl;
         exit(1);
     }
+    Memory::reinitialize(handle);
 }
 
 static void findTests(const char *path) {
@@ -65,7 +66,6 @@ int main(int argc, char *argv[]) {
         getcwd(cwd, PATH_MAX);
         findTests(cwd);
     }
-    Memory::reinitialize();
 
     Test::logStatsToStderr(true);
 
