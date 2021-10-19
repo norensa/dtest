@@ -14,10 +14,11 @@ BUILD_DIR = build/$(shell uname -s)-$(shell uname -m)
 
 SOURCES = $(wildcard *.dtest.cpp)
 OBJ_FILES = $(SOURCES:%.dtest.cpp=$(BUILD_DIR)/%.dtest.so)
+STATIC_OBJ_FILES = $(SOURCES:%.dtest.cpp=$(BUILD_DIR)/static/%.dtest.o)
 
 .PHONY : all clean clean-dep
 
-all : $(OBJ_FILES)
+all : $(OBJ_FILES) $(STATIC_OBJ_FILES)
 
 ifndef nodep
 include $(SOURCES:%.cpp=.dep/%.d)
@@ -39,7 +40,7 @@ clean-dep :
 
 # dirs
 
-.dep $(BUILD_DIR):
+.dep $(BUILD_DIR) $(BUILD_DIR)/static :
 	@echo "MKDIR     $(MODULE)/test/$@/"
 	@mkdir -p $@
 
@@ -50,8 +51,13 @@ clean-dep :
 	@set -e; rm -f $@; \
 	$(CXX) $(DEPFLAGS) $(INCLUDES) $< > $@.$$$$; \
 	sed 's,\($*\)\.o[ :]*,$(BUILD_DIR)/\1.so $@ : ,g' < $@.$$$$ > $@; \
+	sed 's,\($*\)\.o[ :]*,$(BUILD_DIR)/static/\1.o $@ : ,g' < $@.$$$$ >> $@; \
 	rm -f $@.$$$$
 
-$(BUILD_DIR)/%.dtest.so : %.dtest.cpp $(LIB_DEPEND) | $(BUILD_DIR)
+$(BUILD_DIR)/%.dtest.so : %.dtest.cpp | $(BUILD_DIR)
 	@echo "CXX       $(MODULE)/test/$@"
 	@$(CXX) -shared $(CPPFLAGS) $(CXXFLAGS) $(EXTRACXXFLAGS) -I../include $< -o $@
+
+$(BUILD_DIR)/static/%.dtest.o : %.dtest.cpp | $(BUILD_DIR)/static
+	@echo "CXX       $(MODULE)/test/static/$@"
+	@$(CXX) -c $(CPPFLAGS) $(CXXFLAGS) $(EXTRACXXFLAGS) -I../include $< -o $@

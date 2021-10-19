@@ -14,20 +14,23 @@ DEPFLAGS = -MM
 
 SOURCES = $(wildcard src/*.cpp)
 OBJ_FILES = $(SOURCES:src/%.cpp=$(BUILD_DIR)/%.o)
+OBJ_FILES_BASE = $(filter-out $(BUILD_DIR)/dtest.o, $(OBJ_FILES))
 OBJ_FILES_CXX11 = $(SOURCES:src/%.cpp=$(BUILD_DIR)/cxx11/%.o)
 OBJ_FILES_CXX14 = $(SOURCES:src/%.cpp=$(BUILD_DIR)/cxx14/%.o)
 OBJ_FILES_CXX17 = $(SOURCES:src/%.cpp=$(BUILD_DIR)/cxx17/%.o)
 
 BIN_DIR := bin/$(shell uname -s)-$(shell uname -m)
 
-.PHONY : all build-test-only test clean clean-dep
+.PHONY : all dtest-static build-tests test clean clean-dep
 
 all : dtest
 
-build-test-only:
+dtest-static : $(STATIC_TARGET)
+
+build-tests :
 	@$(MAKE) -C test --no-print-directory EXTRACXXFLAGS="$(EXTRACXXFLAGS)" nodep="$(nodep)"
 
-test : dtest build-test-only
+test : dtest build-tests
 	@./dtest
 
 ifndef nodep
@@ -54,41 +57,45 @@ clean-dep :
 
 # dirs
 
-.dep $(BUILD_DIR) $(BUILD_DIR)/cxx11 $(BUILD_DIR)/cxx14 $(BUILD_DIR)/cxx17 $(BIN_DIR):
+.dep $(BUILD_DIR) $(BUILD_DIR)/cxx11 $(BUILD_DIR)/cxx14 $(BUILD_DIR)/cxx17 $(BIN_DIR) :
 	@echo "MKDIR     dtest/$@/"
 	@mkdir -p $@
 
 # core
 
-dtest: $(BIN_DIR)/dtest
+dtest : $(BIN_DIR)/dtest
 	@echo "LN        dtest/$@"
 	@ln -sf $(BIN_DIR)/$@ $@
 
-dtest-cxx11: $(BIN_DIR)/dtest-cxx11
+dtest-cxx11 : $(BIN_DIR)/dtest-cxx11
 	@echo "LN        dtest/$@"
 	@ln -sf $(BIN_DIR)/$@ $@
 
-dtest-cxx14: $(BIN_DIR)/dtest-cxx14
+dtest-cxx14 : $(BIN_DIR)/dtest-cxx14
 	@echo "LN        dtest/$@"
 	@ln -sf $(BIN_DIR)/$@ $@
 
-dtest-cxx17: $(BIN_DIR)/dtest-cxx17
+dtest-cxx17 : $(BIN_DIR)/dtest-cxx17
 	@echo "LN        dtest/$@"
 	@ln -sf $(BIN_DIR)/$@ $@
 
-$(BIN_DIR)/dtest: $(OBJ_FILES) | $(BIN_DIR)
+$(STATIC_TARGET): src/dtest.cpp $(OBJ_FILES_BASE) $(STATIC_TESTS) $(STATIC_TESTS_LIB_DEPEND)
+	@echo "LD        $@"
+	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(EXTRACXXFLAGS) $(LDFLAGS) $(LIB_DIRS) $(STATIC_TESTS_LIB_DIRS) $(INCLUDES) $(OBJ_FILES_BASE) $(STATIC_TESTS) src/dtest.cpp $(LIBS) $(STATIC_TEST_LIBS) -o $@
+
+$(BIN_DIR)/dtest : $(OBJ_FILES) | $(BIN_DIR)
 	@echo "LD        dtest/$@"
 	@$(CXX) $(CXXFLAGS) $(EXTRACXXFLAGS) $(LDFLAGS) $(LIB_DIRS) $(OBJ_FILES) $(LIBS) -o $@
 
-$(BIN_DIR)/dtest-cxx11: $(OBJ_FILES_CXX11) | $(BIN_DIR)
+$(BIN_DIR)/dtest-cxx11 : $(OBJ_FILES_CXX11) | $(BIN_DIR)
 	@echo "LD        dtest/$@"
 	@$(CXX) -std=c++11 $(CXXFLAGS) $(EXTRACXXFLAGS) $(LDFLAGS) $(LIB_DIRS) $(OBJ_FILES_CXX11) $(LIBS) -o $@
 
-$(BIN_DIR)/dtest-cxx14: $(OBJ_FILES_CXX14) | $(BIN_DIR)
+$(BIN_DIR)/dtest-cxx14 : $(OBJ_FILES_CXX14) | $(BIN_DIR)
 	@echo "LD        dtest/$@"
 	@$(CXX) -std=c++14 $(CXXFLAGS) $(EXTRACXXFLAGS) $(LDFLAGS) $(LIB_DIRS) $(OBJ_FILES_CXX14) $(LIBS) -o $@
 
-$(BIN_DIR)/dtest-cxx17: $(OBJ_FILES_CXX17) | $(BIN_DIR)
+$(BIN_DIR)/dtest-cxx17 : $(OBJ_FILES_CXX17) | $(BIN_DIR)
 	@echo "LD        dtest/$@"
 	@$(CXX) -std=c++17 $(CXXFLAGS) $(EXTRACXXFLAGS) $(LDFLAGS) $(LIB_DIRS) $(OBJ_FILES_CXX17) $(LIBS) -o $@
 
