@@ -24,7 +24,7 @@ jobs:
     - name: Run tests (default-static)
       run: cd static && ./dtest-static
     - name: Dump results (default-static)
-      run: cat dtest.log.json
+      run: cat static/dtest.log.json
 
     - name: Run tests (c++11)
       run: ./dtest-cxx11 test/build
