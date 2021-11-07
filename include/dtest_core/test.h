@@ -150,15 +150,6 @@ private:
 
 public:
 
-    struct DependencyInjector {
-        DependencyInjector(
-            const std::string &module,
-            const std::initializer_list<std::string> &dependencies
-        ) {
-            Test::setGlobalModuleDependencies(module, dependencies);
-        }
-    };
-
     static void setGlobalModuleDependencies(
         const std::string &module,
         const std::initializer_list<std::string> &dependencies
@@ -178,6 +169,26 @@ public:
     );
 
     static void runWorker(uint32_t id);
+};
+
+
+class ModuleController {
+private:
+
+    std::string _module;
+
+public:
+
+    ModuleController(const std::string &module)
+    :   _module(module)
+    { }
+
+    ModuleController & dependsOn(
+        const std::initializer_list<std::string> &dependencies
+    ) {
+        Test::setGlobalModuleDependencies(_module, dependencies);
+        return *this;
+    }
 };
 
 class Context {

@@ -1,6 +1,9 @@
 #include <dtest.h>
 
-setDependencies("distributed-unit-test", { "unit-test" });
+module("distributed-unit-test")
+.dependsOn({
+    "unit-test"
+});
 
 dunit("distributed-unit-test", "pass")
 .driver([] {

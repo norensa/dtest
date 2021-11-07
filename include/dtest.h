@@ -16,8 +16,7 @@ using Status = dtest::Test::Status;
 
 ////
 
-#define setDependencies(module, dependencies) static auto __dtest_concat(__dependency_injector__uid_, __COUNTER__) = \
-    dtest::Test::DependencyInjector(module, dependencies)
+#define module(name) static auto __dtest_concat(__module_controller__uid_, __COUNTER__) = (*(new dtest::ModuleController(name)))
 
 ////
 

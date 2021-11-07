@@ -1,6 +1,9 @@
 #include <dtest.h>
 
-setDependencies("performance-test", { "unit-test" });
+module("performance-test")
+.dependsOn({
+    "unit-test"
+});
 
 perf("performance-test", "pass")
 .body([] {
