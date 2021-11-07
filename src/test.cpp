@@ -90,7 +90,10 @@ std::string Test::_errorReport() {
     return s.str();
 }
 
-bool Test::runAll(std::ostream &out) {
+bool Test::runAll(
+    const std::vector<std::pair<std::string, std::string>> &config,
+    std::ostream &out
+) {
 
     _isDriver = true;
     Context::_currentCtx = DriverContext::instance.ptr();
@@ -125,7 +128,22 @@ bool Test::runAll(std::ostream &out) {
     if (_logStatsToStderr) std::cerr << std::endl;
 
     out << std::boolalpha;
-    out << "{\n  \"tests\": [";
+    out << "{\n";
+
+    for (const auto &conf : config) {
+        out << "  \"" << conf.first << "\": ";
+
+        if (conf.second.front() != '[' && conf.second.front() != '{') {
+            out << '"' << conf.second << '"';
+        }
+        else {
+            out << conf.second;
+        }
+
+        out << ",\n";
+    }
+
+    out << "  \"tests\": [";
 
     auto start = std::chrono::high_resolution_clock::now();
 

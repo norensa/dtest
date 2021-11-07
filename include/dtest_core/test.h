@@ -153,7 +153,10 @@ public:
         _logStatsToStderr = val;
     }
 
-    static bool runAll(std::ostream &out = std::cout);
+    static bool runAll(
+        const std::vector<std::pair<std::string, std::string>> &config = {},
+        std::ostream &out = std::cout
+    );
 
     static void runWorker(uint32_t id);
 };
