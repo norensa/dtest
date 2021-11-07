@@ -9,18 +9,34 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+
     - name: Build
       run: |
         make dtest dtest-cxx11 dtest-cxx14 dtest-cxx17 build-tests
         mkdir static
         make dtest-static STATIC_TARGET=static/dtest-static "STATIC_TESTS=$(find test/build/*/static/*.dtest.o -printf '%p ')" EXTRACXXFLAGS=-fopenmp
+
     - name: Run tests (default)
       run: ./dtest test/build
+    - name: Dump results (default)
+      run: cat dtest.log.json
+
     - name: Run tests (default-static)
-      run: cd static; ./dtest-static; cd ..
+      run: cd static && ./dtest-static
+    - name: Dump results (default-static)
+      run: cat dtest.log.json
+
     - name: Run tests (c++11)
       run: ./dtest-cxx11 test/build
+    - name: Dump results (c++11)
+      run: cat dtest.log.json
+
     - name: Run tests (c++14)
       run: ./dtest-cxx14 test/build
+    - name: Dump results (c++14)
+      run: cat dtest.log.json
+
     - name: Run tests (c++17)
       run: ./dtest-cxx17 test/build
+    - name: Dump results (c++17)
+      run: cat dtest.log.json
