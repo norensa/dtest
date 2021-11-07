@@ -210,11 +210,12 @@ bool Test::runAll(std::ostream &out) {
                 // find tests blocked on the (now) completed module
                 auto it = blocked.find(test->_module);
                 if (it != blocked.end()) {
+                    auto insertPos = ready.begin();
                     for (auto tt : it->second) {
                         // and remove that module from their set of dependencies
                         tt->_dependencies.erase(test->_module);
                         // if no more dependencies are needed, then push to ready queue
-                        if (tt->_dependencies.empty()) ready.push_front(tt);
+                        if (tt->_dependencies.empty()) ready.insert(insertPos, tt);
                     }
                 }
             }
