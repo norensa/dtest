@@ -1,7 +1,8 @@
 #include <dtest.h>
 
+setDependencies("distributed-unit-test", { "unit-test" });
+
 dunit("distributed-unit-test", "pass")
-.dependsOn("unit-test")
 .driver([] {
     assert(true)
 })
@@ -10,7 +11,6 @@ dunit("distributed-unit-test", "pass")
 });
 
 dunit("distributed-unit-test", "fail")
-.dependsOn("unit-test")
 .expect(Status::FAIL)
 .driver([] {
     assert(false)
@@ -20,7 +20,6 @@ dunit("distributed-unit-test", "fail")
 });
 
 dunit("distributed-unit-test", "driver-fail")
-.dependsOn("unit-test")
 .expect(Status::FAIL)
 .driver([] {
     assert(false)
@@ -30,7 +29,6 @@ dunit("distributed-unit-test", "driver-fail")
 });
 
 dunit("distributed-unit-test", "worker-fail")
-.dependsOn("unit-test")
 .expect(Status::FAIL)
 .driver([] {
     assert(true)
@@ -40,7 +38,6 @@ dunit("distributed-unit-test", "worker-fail")
 });
 
 dunit("distributed-unit-test", "mem-leak")
-.dependsOn("unit-test")
 .expect(Status::PASS_WITH_MEMORY_LEAK)
 .driver([] {
     #pragma GCC diagnostic push
@@ -58,7 +55,6 @@ dunit("distributed-unit-test", "mem-leak")
 });
 
 dunit("distributed-unit-test", "driver-mem-leak")
-.dependsOn("unit-test")
 .expect(Status::PASS_WITH_MEMORY_LEAK)
 .driver([] {
     #pragma GCC diagnostic push
@@ -72,7 +68,6 @@ dunit("distributed-unit-test", "driver-mem-leak")
 });
 
 dunit("distributed-unit-test", "worker-mem-leak")
-.dependsOn("unit-test")
 .expect(Status::PASS_WITH_MEMORY_LEAK)
 .driver([] {
     assert(true);
@@ -86,7 +81,6 @@ dunit("distributed-unit-test", "worker-mem-leak")
 });
 
 dunit("distributed-unit-test", "wait-notify")
-.dependsOn("unit-test")
 .workers(4)
 .driver([] {
     dtest_notify();
@@ -98,7 +92,6 @@ dunit("distributed-unit-test", "wait-notify")
 });
 
 dunit("distributed-unit-test", "user-message")
-.dependsOn("unit-test")
 .workers(4)
 .driver([] {
     int x;
@@ -165,7 +158,6 @@ static sockaddr get_sock_addr(int fd) {
 }
 
 dunit("distributed-unit-test", "tcp")
-.dependsOn("unit-test")
 .workers(1)
 .driver([] {
     auto fd = tcp_server_sock();
@@ -191,7 +183,6 @@ dunit("distributed-unit-test", "tcp")
 });
 
 dunit("distributed-unit-test", "tcp-faulty")
-.dependsOn("unit-test")
 .workers(1)
 .faultyNetwork(0)
 .driver([] {
@@ -220,7 +211,6 @@ dunit("distributed-unit-test", "tcp-faulty")
 });
 
 dunit("distributed-unit-test", "udp")
-.dependsOn("unit-test")
 .workers(1)
 .driver([] {
     auto fd = udp_server_sock();
@@ -244,7 +234,6 @@ dunit("distributed-unit-test", "udp")
 });
 
 dunit("distributed-unit-test", "udp-faulty")
-.dependsOn("unit-test")
 .workers(1)
 .faultyNetwork(0.3, 0)
 .driver([] {

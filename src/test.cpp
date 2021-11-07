@@ -67,6 +67,8 @@ static std::string __statusStringPastTense[] = {
 
 std::unordered_map<std::string, std::list<Test *>> Test::__tests;
 
+std::unordered_map<std::string, std::unordered_set<std::string>> Test::__globalDependencies;
+
 bool Test::_logStatsToStderr = false;
 
 bool Test::_isDriver = false;
@@ -88,6 +90,21 @@ std::string Test::_errorReport() {
     }
 
     return s.str();
+}
+
+void Test::setGlobalModuleDependencies(
+    const std::string &module,
+    const std::initializer_list<std::string> &dependencies
+) {
+    __globalDependencies[module] = dependencies;
+
+    for (auto t : __tests[module]) {
+        for (const auto &dep : dependencies) {
+            if (t->_dependencies.count(dep) == 0) {
+                t->_dependencies.insert(dep);
+            }
+        }
+    }
 }
 
 bool Test::runAll(
@@ -116,6 +133,7 @@ bool Test::runAll(
                 ready.push_back(tt);
             }
             else {
+                tt->_remainingDependencies = t->_dependencies;
                 for (const auto &dep: t->_dependencies) {
                     blocked[dep].push_back(tt);
                 }
@@ -197,8 +215,11 @@ bool Test::runAll(
             }
 
             out << "\n    {";
-            out << "\n      \"i\": " << runCount << ",";
             out << "\n      \"name\": \"" << testname << "\",";
+            if (! test->_dependencies.empty()) {
+                out << "\n      \"dependencies\": " << jsonify(test->_dependencies, 6) << ",";
+            }
+            out << "\n      \"i\": " << runCount << ",";
             out << "\n      \"success\": " << test->_success << ",";
             out << "\n      \"status\": \"" << statusString(test->_status) << "\",";
             out << "\n      \"report\": {\n" << indent(test->_detailedReport, 8);
@@ -231,9 +252,9 @@ bool Test::runAll(
                     auto insertPos = ready.begin();
                     for (auto tt : it->second) {
                         // and remove that module from their set of dependencies
-                        tt->_dependencies.erase(test->_module);
+                        tt->_remainingDependencies.erase(test->_module);
                         // if no more dependencies are needed, then push to ready queue
-                        if (tt->_dependencies.empty()) ready.insert(insertPos, tt);
+                        if (tt->_remainingDependencies.empty()) ready.insert(insertPos, tt);
                     }
                 }
             }

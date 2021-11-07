@@ -16,6 +16,11 @@ using Status = dtest::Test::Status;
 
 ////
 
+#define setDependencies(module, dependencies) static auto __dtest_concat(__dependency_injector__uid_, __COUNTER__) = \
+    dtest::Test::DependencyInjector(module, dependencies)
+
+////
+
 #include <dtest_core/unit_test.h>
 
 #ifdef DTEST_DISABLE_ALL

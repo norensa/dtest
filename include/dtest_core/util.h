@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include <vector>
+#include <sstream>
 
 std::string formatDuration(double nanos);
 std::string formatDurationJSON(double nanos);
@@ -12,4 +12,27 @@ std::string indent(const std::string &str, int spaces);
 
 std::string jsonify(const std::string &str);
 std::string jsonify(size_t count, char const * const *str, int indent = 0);
-std::string jsonify(const std::vector<std::string> &str, int indent = 0);
+
+template <typename Container>
+std::string jsonify(const Container &str, int indent = 0) {
+    std::stringstream s;
+
+    std::string in = "";
+    in.resize(indent, ' ');
+
+    size_t count = str.size();
+
+    s << '[';
+    if (count > 0) s << '\n' << in;
+    else s << ' ';
+    auto it = str.begin();
+    for (size_t i = 0; it != str.end(); ++it, ++i) {
+        s << "  \"" << *it;
+        if (i < count - 1) s << "\",\n" << in;
+        else s << "\"\n" << in;
+    }
+    s << ']';
+
+    return s.str();
+}
+

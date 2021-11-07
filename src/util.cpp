@@ -1,5 +1,4 @@
 #include <dtest_core/util.h>
-#include <sstream>
 
 std::string formatDuration(double nanos) {
     std::stringstream s;
@@ -92,27 +91,6 @@ std::string jsonify(size_t count, char const * const *str, int indent) {
 
     std::string in = "";
     in.resize(indent, ' ');
-
-    s << '[';
-    if (count > 0) s << '\n' << in;
-    else s << ' ';
-    for (size_t i = 0; i < count; ++i) {
-        s << "  \"" << str[i];
-        if (i < count - 1) s << "\",\n" << in;
-        else s << "\"\n" << in;
-    }
-    s << ']';
-
-    return s.str();
-}
-
-std::string jsonify(const std::vector<std::string> &str, int indent) {
-    std::stringstream s;
-
-    std::string in = "";
-    in.resize(indent, ' ');
-
-    size_t count = str.size();
 
     s << '[';
     if (count > 0) s << '\n' << in;

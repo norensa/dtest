@@ -41,6 +41,7 @@ protected:
     std::string _name;
 
     std::unordered_set<std::string> _dependencies;
+    std::unordered_set<std::string> _remainingDependencies;
 
     bool _enabled = true;
     bool _success = false;
@@ -78,21 +79,23 @@ private:
 public:
 
     inline Test(
-        const std::string &name
-    ): _module("root"),
-       _name(name)
-    {
-        __tests[_module].push_back(this);
-    }
-
-    inline Test(
         const std::string &module,
         const std::string &name
     ): _module(module),
        _name(name)
     {
         __tests[_module].push_back(this);
+
+        auto it = __globalDependencies.find(module);
+        if (it != __globalDependencies.end()) {
+            _dependencies = it->second;
+        }
     }
+
+    inline Test(
+        const std::string &name
+    ): Test("root", name)
+    { }
 
     virtual Test * copy() const = 0;
 
@@ -137,6 +140,8 @@ private:
 
     static std::unordered_map<std::string, std::list<Test *>> __tests;
 
+    static std::unordered_map<std::string, std::unordered_set<std::string>> __globalDependencies;
+
     static bool _logStatsToStderr;
 
     static bool _isDriver;
@@ -144,6 +149,20 @@ private:
     static uint16_t _defaultNumWorkers;
 
 public:
+
+    struct DependencyInjector {
+        DependencyInjector(
+            const std::string &module,
+            const std::initializer_list<std::string> &dependencies
+        ) {
+            Test::setGlobalModuleDependencies(module, dependencies);
+        }
+    };
+
+    static void setGlobalModuleDependencies(
+        const std::string &module,
+        const std::initializer_list<std::string> &dependencies
+    );
 
     static inline const std::string & statusString(const Status &status) {
         return __statusString[(uint32_t) status];
