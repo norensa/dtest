@@ -16,34 +16,42 @@ jobs:
         mkdir static
         make dtest-static STATIC_TARGET=static/dtest-static "STATIC_TESTS=$(find test/build/*/static/*.dtest.o -printf '%p ')" EXTRACXXFLAGS=-fopenmp
 
-    # - name: Run tests (default)
-    #   run: ./dtest test/build
-    # - name: Dump results (default)
-    #   run: cat dtest.log.json
+    - name: Run tests (default)
+      if: ${{ always() }}
+      run: ./dtest test/build
 
-    - name: Run tests (default-static)
-      run: |
-        cd static
-        ./dtest-static
-        mv static/dtest.log.json dtest.log.json
-    - name: Dump results (default-static)
+    - name: Dump results (default)
+      if: ${{ always() }}
       run: cat dtest.log.json
 
+    - name: Run tests (default-static)
+      if: ${{ always() }}
+      run: cd static && ./dtest-static
+
+    - name: Dump results (default-static)
+      if: ${{ always() }}
+      run: cat static/dtest.log.json
+
     - name: Run tests (c++11)
+      if: ${{ always() }}
       run: ./dtest-cxx11 test/build
+
     - name: Dump results (c++11)
+      if: ${{ always() }}
       run: cat dtest.log.json
 
     - name: Run tests (c++14)
+      if: ${{ always() }}
       run: ./dtest-cxx14 test/build
+
     - name: Dump results (c++14)
+      if: ${{ always() }}
       run: cat dtest.log.json
 
     - name: Run tests (c++17)
+      if: ${{ always() }}
       run: ./dtest-cxx17 test/build
-    - name: Dump results (c++17)
-      run: cat dtest.log.json
 
-    - name: Dump results (failure)
-      if: ${{ failure() }}
+    - name: Dump results (c++17)
+      if: ${{ always() }}
       run: cat dtest.log.json
