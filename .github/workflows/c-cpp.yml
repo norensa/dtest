@@ -16,10 +16,10 @@ jobs:
         mkdir static
         make dtest-static STATIC_TARGET=static/dtest-static "STATIC_TESTS=$(find test/build/*/static/*.dtest.o -printf '%p ')" EXTRACXXFLAGS=-fopenmp
 
-    - name: Run tests (default)
-      run: ./dtest test/build
-    - name: Dump results (default)
-      run: cat dtest.log.json
+    # - name: Run tests (default)
+    #   run: ./dtest test/build
+    # - name: Dump results (default)
+    #   run: cat dtest.log.json
 
     - name: Run tests (default-static)
       run: |
