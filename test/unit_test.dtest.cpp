@@ -11,7 +11,7 @@ unit("unit-test", "pass")
 });
 
 unit("unit-test", "fail")
-// .expect(Status::FAIL)
+.expect(Status::FAIL)
 .body([] {
     assert(false);
 });
