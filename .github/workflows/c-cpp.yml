@@ -17,36 +17,33 @@ jobs:
         make dtest-static STATIC_TARGET=static/dtest-static "STATIC_TESTS=$(find test/build/*/static/*.dtest.o -printf '%p ')" EXTRACXXFLAGS=-fopenmp
 
     - name: Run tests (default)
-      continue-on-error: true
       run: ./dtest test/build
     - name: Dump results (default)
-      continue-on-error: true
       run: cat dtest.log.json
 
     - name: Run tests (default-static)
-      continue-on-error: true
-      run: cd static && ./dtest-static
+      run: |
+        cd static
+        ./dtest-static
+        mv static/dtest.log.json dtest.log.json
     - name: Dump results (default-static)
-      continue-on-error: true
-      run: cat static/dtest.log.json
+      run: cat dtest.log.json
 
     - name: Run tests (c++11)
-      continue-on-error: true
       run: ./dtest-cxx11 test/build
     - name: Dump results (c++11)
-      continue-on-error: true
       run: cat dtest.log.json
 
     - name: Run tests (c++14)
-      continue-on-error: true
       run: ./dtest-cxx14 test/build
     - name: Dump results (c++14)
-      continue-on-error: true
       run: cat dtest.log.json
 
     - name: Run tests (c++17)
-      continue-on-error: true
       run: ./dtest-cxx17 test/build
     - name: Dump results (c++17)
-      continue-on-error: true
+      run: cat dtest.log.json
+
+    - name: Dump results (failure)
+      if: ${{ failure() }}
       run: cat dtest.log.json
