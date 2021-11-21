@@ -5,9 +5,23 @@
 using namespace dtest;
 
 void PerformanceTest::_checkPerformance() {
-    if (_bodyTime + _performanceMargin >= _baselineTime) {
-        _status = Status::TOO_SLOW;
-        err("Failed to meet performance requirements with margin of " + formatDuration(_performanceMargin));
+    if (_performanceMarginRatio == 0) {
+        if (_bodyTime + _performanceMargin >= _baselineTime) {
+            _status = Status::TOO_SLOW;
+            err(
+                "Failed to meet performance requirements with a margin of "
+                + formatDuration(_performanceMargin)
+            );
+        }
+    }
+    else {
+        if (_bodyTime > _baselineTime * _performanceMarginRatio) {
+            _status = Status::TOO_SLOW;
+            err(
+                "Failed to meet performance requirements of "
+                + std::to_string(_performanceMarginRatio) + " of the baseline time"
+            );
+        }
     }
 }
 
@@ -31,10 +45,12 @@ void PerformanceTest::_driverRun() {
             _checkPerformance();
 
             m << _status
+                << _errors
                 << _baselineTime;
         },
         [this] (Message &m) {
             m >> _status
+                >> _errors
                 >> _baselineTime;
         },
         [this] (const std::string &error) {

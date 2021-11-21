@@ -14,6 +14,8 @@ protected:
 
     uint64_t _performanceMargin = 1e6;      // 1 ms
 
+    double _performanceMarginRatio = 0;
+
     void _checkPerformance();
 
     void _driverRun() override;
@@ -104,6 +106,11 @@ public:
 
     inline PerformanceTest & performanceMargin(uint64_t seconds) {
         return performanceMarginNanos(seconds * 1000000000lu);
+    }
+
+    inline PerformanceTest & performanceMarginAsBaselineRatio(double fractionOfBaselineTime) {
+        _performanceMarginRatio = fractionOfBaselineTime;
+        return *this;
     }
 
     inline PerformanceTest & expect(Status status) {
