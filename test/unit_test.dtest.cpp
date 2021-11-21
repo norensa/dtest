@@ -184,3 +184,10 @@ unit("unit-test", "sandboxed-stdio-local")
     std::cout << "This is a stdout test";
     std::cerr << "This is a stderr test";
 });
+
+unit("unit-test", "special-characters-in-report")
+.body([] {
+    std::cout << "This is a stdout test of \"special characters\"\nAnother line...";
+    err("This is an error message with \"special characters\"");
+    err("This is an error message with \"special characters\"\nAnother line...");
+});

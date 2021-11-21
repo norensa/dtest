@@ -70,14 +70,33 @@ std::string jsonify(const std::string &str) {
     std::stringstream s;
 
     if (str.find('\n') == std::string::npos) {
-        s << "\"" << str << "\"";
+        s << "\"";
+        for (auto c : str) {
+            switch (c) {
+            case '\n':
+                s << "\",\n  \"";
+                break;
+            case '"':
+                s << '\\';
+            default:
+                s << c;
+            }
+        }
+        s << "\"";
     }
     else {
         s << "[\n  \"";
         const char *p = str.c_str();
         while (*p != '\0') {
-            if (*p == '\n') s << "\",\n  \"";
-            else s << *p;
+            switch (*p) {
+            case '\n':
+                s << "\",\n  \"";
+                break;
+            case '"':
+                s << '\\';
+            default:
+                s << *p;
+            }
             ++p;
         }
         s << "\"\n]";
@@ -96,7 +115,20 @@ std::string jsonify(size_t count, char const * const *str, int indent) {
     if (count > 0) s << '\n' << in;
     else s << ' ';
     for (size_t i = 0; i < count; ++i) {
-        s << "  \"" << str[i];
+        s << "  \"";
+        const char *p = str[i];
+        while (*p != '\0') {
+            switch (*p) {
+            case '\n':
+                s << "\",\n  \"";
+                break;
+            case '"':
+                s << '\\';
+            default:
+                s << *p;
+            }
+            ++p;
+        }
         if (i < count - 1) s << "\",\n" << in;
         else s << "\"\n" << in;
     }

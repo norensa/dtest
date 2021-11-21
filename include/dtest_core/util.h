@@ -27,7 +27,18 @@ std::string jsonify(const Container &str, int indent = 0) {
     else s << ' ';
     auto it = str.begin();
     for (size_t i = 0; it != str.end(); ++it, ++i) {
-        s << "  \"" << *it;
+        s << "  \"";
+        for (auto c : *it) {
+            switch (c) {
+            case '\n':
+                s << "\",\n  \"";
+                break;
+            case '"':
+                s << '\\';
+            default:
+                s << c;
+            }
+        }
         if (i < count - 1) s << "\",\n" << in;
         else s << "\"\n" << in;
     }
