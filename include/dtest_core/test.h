@@ -389,12 +389,27 @@ public:
     }
 };
 
+class TestFailureException : public SandboxException {
+public:
+    inline TestFailureException(const char *msg)
+    : SandboxException(msg)
+    {
+        sandbox().enter();
+    }
+};
+
 }  // end namespace dtest
 
 #define assert(expr) \
     if (! static_cast<bool>(expr)) { \
         dtest::sandbox().exit(); \
         throw dtest::AssertionException(#expr, __FILE__, __LINE__, __PRETTY_FUNCTION__); \
+    }
+
+#define fail(msg) \
+    { \
+        dtest::sandbox().exit(); \
+        throw dtest::TestFailureException(msg); \
     }
 
 #define err(msg) dtest::Context::instance()->logError(msg)

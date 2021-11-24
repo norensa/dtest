@@ -16,16 +16,16 @@ dunit("distributed-unit-test", "pass")
 dunit("distributed-unit-test", "fail")
 .expect(Status::FAIL)
 .driver([] {
-    assert(false)
+    fail("test_failed");
 })
 .worker([] {
-    assert(false)
+    fail("test_failed");
 });
 
 dunit("distributed-unit-test", "driver-fail")
 .expect(Status::FAIL)
 .driver([] {
-    assert(false)
+    fail("test_failed");
 })
 .worker([] {
     assert(true)
@@ -37,7 +37,7 @@ dunit("distributed-unit-test", "worker-fail")
     assert(true)
 })
 .worker([] {
-    assert(false)
+    fail("test_failed");
 });
 
 dunit("distributed-unit-test", "mem-leak")
@@ -253,7 +253,7 @@ dunit("distributed-unit-test", "udp-faulty")
         }
     }
     close(fd);
-    assert(false);      // shouldn't get here
+    fail("test_failed");;      // shouldn't get here
 })
 .worker([] {
     sockaddr addr;

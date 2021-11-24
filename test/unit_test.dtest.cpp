@@ -13,7 +13,7 @@ unit("unit-test", "pass")
 unit("unit-test", "fail")
 .expect(Status::FAIL)
 .body([] {
-    assert(false);
+    fail("test failed");
 });
 
 unit("unit-test", "timeout")
@@ -89,7 +89,7 @@ unit("unit-test", "fail-before-dynamic-free")
         }
     } b;
 
-    assert(false);
+    fail("test failed");
 });
 
 unit("unit-test", "uncaught-exception")
@@ -108,7 +108,7 @@ unit("unit-test", "local-test-fail")
 .inProcess()
 .expect(Status::FAIL)
 .body([] {
-    assert(false);
+    fail("test failed");
 });
 
 unit("unit-test", "openmp")
