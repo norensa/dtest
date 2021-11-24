@@ -38,7 +38,7 @@ perf("performance-test", "too-slow-ratio")
     for (int i = 0; i < 8000000; ++i);
 })
 .baseline([] {
-    for (int i = 0; i < 8000000; ++i);
+    for (int i = 0; i < 4000000; ++i);
 });
 
 perf("performance-test", "error-msg")
