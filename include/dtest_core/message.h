@@ -26,8 +26,6 @@ private:
     void _exit();
 
     inline void _fit(size_t sz) {
-        _enter();
-
         size_t len = _buf - (uint8_t *) _allocBuf;
         size_t rem = _allocLen - len;
         if (rem < sz) {
@@ -35,8 +33,6 @@ private:
             _allocBuf = realloc(_allocBuf, _allocLen);
             _buf = (uint8_t *) _allocBuf + len;
         }
-
-        _exit();
     }
 
     inline void _dispose() {
@@ -133,17 +129,25 @@ public:
     }
 
     inline Message & put(const void *data, size_t len) {
+        _enter();
+
         _fit(len);
         memcpy(_buf, data, len);
         _buf += len;
+
+        _exit();
         return *this;
     }
 
     template <typename T>
     inline Message & operator<<(const T &x) {
+        _enter();
+
         _fit(sizeof(T));
         *((T *) _buf) = x;
         _buf += sizeof(T);
+
+        _exit();
         return *this;
     }
 
