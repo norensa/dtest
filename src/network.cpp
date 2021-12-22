@@ -6,7 +6,9 @@ using namespace dtest;
 
 thread_local size_t Network::_locked = false;
 
-static Network *instance = nullptr;
+namespace dtest {
+    Network *_netmgr_instance = nullptr;
+}
 
 Network::Network()
 : _sendSize(0),
@@ -14,7 +16,7 @@ Network::Network()
   _recvSize(0),
   _recvCount(0)
 {
-    instance = this;
+    _netmgr_instance = this;
 }
 
 bool Network::canSend(int fd) {
@@ -60,66 +62,4 @@ void Network::trackRecv(size_t size) {
     ++_recvCount;
 
     _exit();
-}
-
-// libc overrides
-
-ssize_t send(int sockfd, const void *buf, size_t len, int flags) {
-    ssize_t res;
-
-    if (instance->canSend(sockfd)) {
-        res = libc().send(sockfd, buf, len, flags);
-    }
-    else {
-        res = len;
-    }
-
-    instance->trackSend((res == -1) ? 0 : res);
-
-    return res;
-}
-
-ssize_t sendto(
-    int sockfd,
-    const void *buf,
-    size_t len,
-    int flags,
-    const struct sockaddr *dest_addr,
-    socklen_t addrlen
-) {
-    ssize_t res;
-
-    if (instance->canSend(sockfd)) {
-        res = libc().sendto(sockfd, buf, len, flags, dest_addr, addrlen);
-    }
-    else {
-        res = len;
-    }
-
-    instance->trackSend((res == -1) ? 0 : res);
-
-    return res;
-}
-
-ssize_t recv(int sockfd, void *buf, size_t len, int flags) {
-    ssize_t res = libc().recv(sockfd, buf, len, flags);
-
-    instance->trackRecv((res == -1) ? 0 : res);
-
-    return res;
-}
-
-ssize_t recvfrom(
-    int sockfd,
-    void * __restrict buf,
-    size_t len,
-    int flags,
-    struct sockaddr * __restrict src_addr,
-    socklen_t * __restrict addrlen
-) {
-    ssize_t res = libc().recvfrom(sockfd, buf, len, flags, src_addr, addrlen);
-
-    instance->trackRecv((res == -1) ? 0 : res);
-
-    return res;
 }
