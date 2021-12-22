@@ -287,8 +287,19 @@ dunit("distributed-unit-test", "runaway-allocations-during-message")
     t.join();
 })
 .worker([] {
+    volatile bool run = true;
+    auto t = std::thread([&run] {
+        while (run) {
+            void *ptr = malloc(1);
+            free(ptr);
+        }
+    });
+
     int x;
     for (auto i = 0; i < 1000; ++i) {
         dtest_recvMsg() >> x;
     }
+
+    run = false;
+    t.join();
 });

@@ -710,26 +710,26 @@ void WorkerContext::_waitForEvent() {
 }
 
 Message WorkerContext::createUserMessage() {
-    sandbox().exit();
+    sandbox().lock();
 
     Message m;
     m << OpCode::USER_MESSAGE << _id;
 
-    sandbox().enter();
+    sandbox().unlock();
 
     return m;
 }
 
 void WorkerContext::sendUserMessage(Message &message) {
-    sandbox().exit();
+    sandbox().lock();
 
     message.send(_driverSocket);
 
-    sandbox().enter();
+    sandbox().unlock();
 }
 
 Message WorkerContext::getUserMessage() {
-    sandbox().exit();
+    sandbox().lock();
 
     while (_userMessages.empty()) {
         _waitForEvent();
@@ -737,23 +737,23 @@ Message WorkerContext::getUserMessage() {
     Message m = _userMessages.front();
     _userMessages.pop_front();
 
-    sandbox().enter();
+    sandbox().unlock();
 
     return m;
 }
 
 void WorkerContext::notify() {
-    sandbox().exit();
+    sandbox().lock();
 
     Message m;
     m << OpCode::NOTIFY << _id;
     m.send(_driverSocket);
 
-    sandbox().enter();
+    sandbox().unlock();
 }
 
 void WorkerContext::wait(uint32_t n) {
-    sandbox().exit();
+    sandbox().lock();
 
     if (n == -1u) n = 1;
 
@@ -763,7 +763,7 @@ void WorkerContext::wait(uint32_t n) {
 
     _notifyCount -= n;
 
-    sandbox().enter();
+    sandbox().unlock();
 }
 
 Lazy<WorkerContext> WorkerContext::instance([] { return new WorkerContext(); });
