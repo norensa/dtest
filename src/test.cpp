@@ -547,28 +547,28 @@ void DriverContext::_join(Test *test) {
 }
 
 Message DriverContext::createUserMessage() {
-    sandbox().exit();
+    sandbox().lock();
 
     Message m;
     m << OpCode::USER_MESSAGE;
 
-    sandbox().enter();
+    sandbox().unlock();
 
     return m;
 }
 
 void DriverContext::sendUserMessage(Message &message) {
-    sandbox().exit();
+    sandbox().lock();
 
     for (auto &w : _allocatedWorkers) {
         message.send(w.second._socket);
     }
 
-    sandbox().enter();
+    sandbox().unlock();
 }
 
 Message DriverContext::getUserMessage() {
-    sandbox().exit();
+    sandbox().lock();
 
     while (_userMessages.empty()) {
         _waitForEvent();
@@ -576,23 +576,23 @@ Message DriverContext::getUserMessage() {
     Message m = std::move(_userMessages.front());
     _userMessages.pop_front();
 
-    sandbox().enter();
+    sandbox().unlock();
 
     return m;
 }
 
 void DriverContext::notify() {
-    sandbox().exit();
+    sandbox().lock();
 
     for (auto &w : _allocatedWorkers) {
         w.second.notify();
     }
 
-    sandbox().enter();
+    sandbox().unlock();
 }
 
 void DriverContext::wait(uint32_t n) {
-    sandbox().exit();
+    sandbox().lock();
 
     if (n == -1u) n = _allocatedWorkers.size();
 
@@ -622,7 +622,7 @@ void DriverContext::wait(uint32_t n) {
     }
 
     delete &pulled;
-    sandbox().enter();
+    sandbox().unlock();
 }
 
 Lazy<DriverContext> DriverContext::instance([] { return new DriverContext(); });

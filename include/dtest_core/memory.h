@@ -28,15 +28,16 @@ private:
     size_t _allocateCount = 0;
     size_t _freeCount = 0;
 
-    static thread_local bool _locked;
+    static thread_local size_t _locked;
+
     inline bool _enter() {
         if (! _track || _locked) return false;
-        _locked = true;
+        ++_locked;
         return true;
     }
 
     inline void _exit() {
-        _locked = false;
+        --_locked;
     }
 
     bool _canTrackAlloc(const CallStack &callstack);
@@ -51,6 +52,14 @@ public:
 
     inline void trackActivity(bool val) {
         _track = val;
+    }
+
+    inline void lock() {
+        ++_locked;
+    }
+
+    inline void unlock() {
+        --_locked;
     }
 
     void track(void *ptr, size_t size);

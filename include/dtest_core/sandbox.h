@@ -106,6 +106,10 @@ public:
 
     void exitAll();
 
+    void lock();
+
+    void unlock();
+
     bool run(
         uint64_t timeoutNanos,
         const std::function<void()> &func,

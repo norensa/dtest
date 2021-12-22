@@ -4,6 +4,8 @@
 
 using namespace dtest;
 
+thread_local size_t Network::_locked = false;
+
 static Network *instance = nullptr;
 
 Network::Network()

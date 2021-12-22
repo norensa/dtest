@@ -158,6 +158,16 @@ void Sandbox::exitAll() {
     _mtx.unlock();
 }
 
+void Sandbox::lock() {
+    _memory.lock();
+    _network.lock();
+}
+
+void Sandbox::unlock() {
+    _memory.unlock();
+    _network.unlock();
+}
+
 bool Sandbox::run(
     uint64_t timeoutNanos,
     const std::function<void()> &func,

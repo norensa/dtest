@@ -6,7 +6,7 @@
 
 using namespace dtest;
 
-thread_local bool Memory::_locked = false;
+thread_local size_t Memory::_locked = false;
 
 namespace dtest {
     Memory *_mmgr_instance = nullptr;

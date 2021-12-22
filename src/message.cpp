@@ -4,11 +4,11 @@
 using namespace dtest;
 
 void Message::_enter() {
-    sandbox().exit();
+    sandbox().lock();
 }
 
 void Message::_exit() {
-    sandbox().enter();
+    sandbox().unlock();
 }
 
 void Message::send(Socket &socket) {

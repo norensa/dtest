@@ -1,4 +1,5 @@
 #include <dtest.h>
+#include <thread>
 
 module("distributed-unit-test")
 .dependsOn({
@@ -264,4 +265,30 @@ dunit("distributed-unit-test", "udp-faulty")
         sendto(fd, &i, sizeof(i), 0, &addr, sizeof(addr));
     }
     close(fd);
+});
+
+dunit("distributed-unit-test", "runaway-allocations-during-message")
+.workers(1)
+.driver([] {
+    volatile bool run = true;
+    auto t = std::thread([&run] {
+        while (run) {
+            void *ptr = malloc(1);
+            free(ptr);
+        }
+    });
+
+    int x = 5;
+    for (auto i = 0; i < 1000; ++i) {
+        dtest_sendMsg(x);
+    }
+
+    run = false;
+    t.join();
+})
+.worker([] {
+    int x;
+    for (auto i = 0; i < 1000; ++i) {
+        dtest_recvMsg() >> x;
+    }
 });

@@ -23,8 +23,10 @@ private:
     double _chance = 1;
     uint64_t _holeDuration = 0;
 
+    static thread_local size_t _locked;
+
     inline bool _enter() {
-        if (! _track) return false;
+        if (! _track || _locked) return false;
         _mtx.lock();
         return true;
     }
@@ -36,6 +38,14 @@ private:
 public:
 
     Network();
+
+    inline void lock() {
+        ++_locked;
+    }
+
+    inline void unlock() {
+        --_locked;
+    }
 
     inline void trackActivity(bool val) {
         _track = val;
