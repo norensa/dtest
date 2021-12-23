@@ -1,5 +1,6 @@
 #include <dtest.h>
 #include <iostream>
+#include <thread>
 
 unit("root-test")
 .body([] {
@@ -190,4 +191,26 @@ unit("unit-test", "special-characters-in-report")
     std::cout << "This is a stdout test of \"special characters\"\nAnother line...";
     err("This is an error message with \"special characters\"");
     err("This is an error message with \"special characters\"\nAnother line...");
+});
+
+unit("unit-test", "runaway-allocations-during-error-log")
+.body([] {
+    volatile bool run = true;
+    volatile bool running = false;
+    auto t = std::thread([&run, &running] {
+        while (run) {
+            void *ptr = malloc(1);
+            free(ptr);
+            running = true;
+        }
+    });
+
+    while (! running);
+
+    for (auto i = 0; i < 100; ++i) {
+        err("test error log");
+    }
+
+    run = false;
+    t.join();
 });

@@ -205,9 +205,9 @@ public:
     virtual ~Context() = default;
 
     inline void logError(const std::string &message) {
-        sandbox().exit();
+        sandbox().lock();
         _currentTest->_errors.push_back(message);
-        sandbox().enter();
+        sandbox().unlock();
     }
 
     virtual Message createUserMessage() = 0;
@@ -385,7 +385,7 @@ public:
         "' in file " + file + ":" + std::to_string(line) + " " + caller
       )
     {
-        sandbox().enter();
+        sandbox().unlock();
     }
 };
 
@@ -394,7 +394,7 @@ public:
     inline TestFailureException(const char *msg)
     : SandboxException(msg)
     {
-        sandbox().enter();
+        sandbox().unlock();
     }
 };
 
@@ -402,13 +402,13 @@ public:
 
 #define assert(expr) \
     if (! static_cast<bool>(expr)) { \
-        dtest::sandbox().exit(); \
+        dtest::sandbox().lock(); \
         throw dtest::AssertionException(#expr, __FILE__, __LINE__, __PRETTY_FUNCTION__); \
     }
 
 #define fail(msg) \
     { \
-        dtest::sandbox().exit(); \
+        dtest::sandbox().lock(); \
         throw dtest::TestFailureException(msg); \
     }
 
