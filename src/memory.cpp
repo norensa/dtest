@@ -132,6 +132,20 @@ void Memory::track(void *ptr, size_t size) {
     _exit();
 }
 
+void Memory::track_mapped(char *ptr, size_t size) {
+    if (! _enter()) return;
+
+    auto callstack = CallStack::trace(2);
+    if (_canTrackAlloc(callstack)) {
+        _mtx.lock();
+        _orderedBlocks.insert({ ptr + size - 1, { size, std::move(callstack) } });
+        _allocateSize += size;
+        _mtx.unlock();
+    }
+
+    _exit();
+}
+
 void Memory::retrack(void *oldPtr, void *newPtr, size_t newSize) {
     if (! _enter()) return;
     _mtx.lock();
@@ -164,6 +178,94 @@ void Memory::retrack(void *oldPtr, void *newPtr, size_t newSize) {
     _blocks.erase(it);
     _blocks.insert({ newPtr, std::move(alloc) });
     _allocateSize += newSize - oldSize;
+
+    _mtx.unlock();
+    _exit();
+}
+
+void Memory::retrack_mapped(char *oldPtr, size_t oldSize, char *newPtr, size_t newSize) {
+    if (! _enter()) return;
+    _mtx.lock();
+
+    while (oldSize > 0) {
+        auto it = _orderedBlocks.lower_bound(oldPtr);
+
+        if (it == _orderedBlocks.end()) break;
+
+        auto p = it->first - it->second.size + 1;
+
+        if (p > oldPtr) break;
+
+        auto alloc = std::move(it->second);
+
+        _orderedBlocks.erase(it);
+
+        if (oldPtr == p) {
+            if (alloc.size > oldSize) {
+                p += oldSize;
+                alloc.size -= oldSize;
+                _orderedBlocks.insert({ p + alloc.size - 1, std::move(alloc) });
+
+                _freeSize += oldSize;
+                oldSize = 0;
+            }
+            else {
+                _freeSize += alloc.size;
+                oldPtr += alloc.size;
+                oldSize -= alloc.size;
+            }
+        }
+        else {
+            size_t off = oldPtr - p;
+            size_t rem = alloc.size - off;
+
+            if (rem > oldSize) {
+                alloc.size = off;
+                _orderedBlocks.insert({ p + alloc.size - 1, alloc});
+
+                p = oldPtr + oldSize;
+                alloc.size = rem - oldSize;
+                _orderedBlocks.insert({ p + alloc.size - 1, std::move(alloc) });
+
+                _freeSize += oldSize;
+                oldSize = 0;
+            }
+            else {
+                _freeSize += rem;
+                oldPtr += rem;
+                oldSize -= rem;
+                alloc.size -= rem;
+                _orderedBlocks.insert({ p + alloc.size - 1, std::move(alloc) });
+            }
+        }
+    }
+
+    if (oldSize > 0) {
+        _mtx.unlock();
+        bool error = _canTrackDealloc(CallStack::trace(2));
+        _exit();
+
+        if (error) {
+            sandbox().exitAll();
+
+            char buf[64];
+            snprintf(buf, sizeof(buf), "no valid memory block at %p", oldPtr);
+
+            throw SandboxFatalException(
+                FatalError::MEMORY_BLOCK_DOES_NOT_EXIST,
+                buf,
+                2
+            );
+        }
+
+        return;
+    }
+
+    auto callstack = CallStack::trace(2);
+    if (_canTrackAlloc(callstack)) {
+        _orderedBlocks.insert({ newPtr + newSize - 1, { newSize, std::move(callstack) } });
+        _allocateSize += newSize;
+    }
 
     _mtx.unlock();
     _exit();
@@ -203,6 +305,88 @@ void Memory::remove(void *ptr) {
     _exit();
 }
 
+void Memory::remove_mapped(char *ptr, size_t size) {
+    if (! _enter()) return;
+    _mtx.lock();
+
+    while (size > 0) {
+        auto it = _orderedBlocks.lower_bound(ptr);
+
+        if (it == _orderedBlocks.end()) break;
+
+        auto p = it->first - it->second.size + 1;
+
+        if (p > ptr) break;
+
+        auto alloc = std::move(it->second);
+
+        _orderedBlocks.erase(it);
+
+        if (ptr == p) {
+            if (alloc.size > size) {
+                p += size;
+                alloc.size -= size;
+                _orderedBlocks.insert({ p + alloc.size - 1, std::move(alloc) });
+
+                _freeSize += size;
+                size = 0;
+            }
+            else {
+                _freeSize += alloc.size;
+                ptr += alloc.size;
+                size -= alloc.size;
+            }
+        }
+        else {
+            size_t off = ptr - p;
+            size_t rem = alloc.size - off;
+
+            if (rem > size) {
+                alloc.size = off;
+                _orderedBlocks.insert({ p + alloc.size - 1, alloc});
+
+                p = ptr + size;
+                alloc.size = rem - size;
+                _orderedBlocks.insert({ p + alloc.size - 1, std::move(alloc) });
+
+                _freeSize += size;
+                size = 0;
+            }
+            else {
+                _freeSize += rem;
+                ptr += rem;
+                size -= rem;
+                alloc.size -= rem;
+                _orderedBlocks.insert({ p + alloc.size - 1, std::move(alloc) });
+            }
+        }
+    }
+
+    if (size > 0) {
+        _mtx.unlock();
+        bool error = _canTrackDealloc(CallStack::trace(2));
+        _exit();
+
+        if (error) {
+            sandbox().exitAll();
+
+            char buf[64];
+            snprintf(buf, sizeof(buf), "no valid memory block at %p", ptr);
+
+            throw SandboxFatalException(
+                FatalError::MEMORY_BLOCK_DOES_NOT_EXIST,
+                buf,
+                2
+            );
+        }
+
+        return;
+    }
+
+    _mtx.unlock();
+    _exit();
+}
+
 void Memory::clear() {
     _enter();
     _mtx.lock();
@@ -213,6 +397,12 @@ void Memory::clear() {
         libc().free(block.first);
     }
     _blocks.clear();
+
+    for (const auto &block : _orderedBlocks) {
+        _freeSize += block.second.size;
+        libc().munmap(block.first - block.second.size + 1, block.second.size);
+    }
+    _orderedBlocks.clear();
 
     _mtx.unlock();
     _exit();
@@ -225,7 +415,12 @@ std::string Memory::report() {
     std::stringstream s;
 
     for (const auto & block : _blocks) {
-        s << "\nBlock @ " << block.first << " allocated from:\n" << block.second.callstack.toString();;
+        s << "\nBlock @ " << block.first << " allocated from:\n" << block.second.callstack.toString();
+    }
+
+    for (const auto & block : _orderedBlocks) {
+        s << "\nBlock @ " << (void *) (block.first - block.second.size + 1)
+            << " allocated from:\n" << block.second.callstack.toString();
     }
 
     _mtx.unlock();

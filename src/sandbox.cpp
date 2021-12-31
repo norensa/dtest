@@ -360,6 +360,12 @@ void LibC::_init() {
 
     free = (void (*)(void *)) dlsym(RTLD_NEXT, "free");
 
+    mmap = (void *(*)(void *, size_t, int, int, int, __off_t)) dlsym(RTLD_NEXT, "mmap");
+
+    mremap = (void *(*)(void *, size_t, size_t, int, ...)) dlsym(RTLD_NEXT, "mremap");
+
+    munmap = (int (*)(void *, size_t)) dlsym(RTLD_NEXT, "munmap");
+
     send = (ssize_t (*)(int, const void *, size_t, int)) dlsym(RTLD_NEXT, "send");
 
     sendto = (ssize_t (*)(int, const void *, size_t, int, const struct sockaddr *, socklen_t)) dlsym(RTLD_NEXT, "sendto");

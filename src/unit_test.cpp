@@ -83,22 +83,22 @@ void UnitTest::_driverRun() {
 }
 
 bool UnitTest::_hasMemoryReport() {
-    return _usedResources.memory.allocate.count > 0
-    || _usedResources.memory.deallocate.count > 0;
+    return _usedResources.memory.allocate.size > 0
+    || _usedResources.memory.deallocate.size > 0;
 }
 
 std::string UnitTest::_memoryReport() {
     std::stringstream s;
 
-    if (_usedResources.memory.allocate.count > 0) {
+    if (_usedResources.memory.allocate.size > 0) {
         s << "\"allocated\": {";
         s << "\n  \"size\": " << _usedResources.memory.allocate.size;
         s << ",\n  \"blocks\": " << _usedResources.memory.allocate.count;
         s << "\n}";
-        if (_usedResources.memory.deallocate.count > 0) s << ",\n";
+        if (_usedResources.memory.deallocate.size > 0) s << ",\n";
     }
 
-    if (_usedResources.memory.deallocate.count > 0) {
+    if (_usedResources.memory.deallocate.size > 0) {
         s << "\"freed\": {";
         s << "\n  \"size\": " << _usedResources.memory.deallocate.size;
         s << ",\n  \"blocks\": " << _usedResources.memory.deallocate.count;

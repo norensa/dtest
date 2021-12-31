@@ -2,6 +2,7 @@
 
 #include <dtest_core/call_stack.h>
 #include <mutex>
+#include <map>
 #include <unordered_map>
 #include <string>
 #include <dlfcn.h>
@@ -22,6 +23,7 @@ private:
 
     volatile bool _track = false;
     std::unordered_map<void *, Allocation> _blocks;
+    std::map<char *, Allocation> _orderedBlocks;
 
     size_t _allocateSize = 0;
     size_t _freeSize = 0;
@@ -64,9 +66,15 @@ public:
 
     void track(void *ptr, size_t size);
 
+    void track_mapped(char *ptr, size_t size);
+
     void retrack(void *oldPtr, void *newPtr, size_t newSize);
 
+    void retrack_mapped(char *oldPtr, size_t oldSize, char *newPtr, size_t newSize);
+
     void remove(void *ptr);
+
+    void remove_mapped(char *ptr, size_t size);
 
     void clear();
 

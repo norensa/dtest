@@ -1,6 +1,8 @@
 #include <dtest.h>
 #include <iostream>
 #include <thread>
+#include <sys/mman.h>
+#include <unistd.h>
 
 unit("root-test")
 .body([] {
@@ -23,7 +25,7 @@ unit("unit-test", "timeout")
 .body([] {
 });
 
-unit("unit-test", "mem-leak")
+unit("unit-test", "malloc-mem-leak")
 .expect(Status::PASS_WITH_MEMORY_LEAK)
 .body([] {
     #pragma GCC diagnostic push
@@ -39,6 +41,67 @@ unit("unit-test", "invalid-free")
     #pragma GCC diagnostic ignored "-Wfree-nonheap-object"
     free((void *) 0xdead);
     #pragma GCC diagnostic pop
+});
+
+unit("unit-test", "mmap")
+.body([] {
+    size_t sz = getpagesize();
+
+    void *ptr = mmap(nullptr, sz, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    assert(ptr != MAP_FAILED);
+    assert(munmap(ptr, sz) == 0);
+});
+
+unit("unit-test", "mmap-munmap-multiple")
+.body([] {
+    size_t sz = getpagesize();
+
+    void *ptr = mmap(nullptr, 2 * sz, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    assert(ptr != MAP_FAILED);
+    assert(munmap(ptr, sz) == 0);
+    assert(munmap((char *) ptr + sz, sz) == 0);
+});
+
+unit("unit-test", "mmap-mem-leak")
+.expect(Status::PASS_WITH_MEMORY_LEAK)
+.body([] {
+    size_t sz = getpagesize();
+
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wunused-result"
+    mmap(nullptr, sz, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    #pragma GCC diagnostic pop
+});
+
+unit("unit-test", "invalid-munmap")
+.expect(Status::FAIL)
+.body([] {
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wfree-nonheap-object"
+    munmap((void *) 0xdead, 1);
+    #pragma GCC diagnostic pop
+});
+
+unit("unit-test", "mmap-munmap-partial")
+.expect(Status::PASS_WITH_MEMORY_LEAK)
+.body([] {
+    size_t sz = getpagesize();
+
+    void *ptr = mmap(nullptr, 3 * sz, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    assert(ptr != MAP_FAILED);
+    assert(munmap((char *) ptr + sz, sz) == 0);
+});
+
+unit("unit-test", "mmap-mremap")
+.expect(Status::PASS_WITH_MEMORY_LEAK)
+.body([] {
+    size_t sz = getpagesize();
+
+    void *ptr = mmap(nullptr, 3 * sz, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    assert(ptr != MAP_FAILED);
+    mremap((char *) ptr + sz, sz, 2 * sz, MREMAP_MAYMOVE);
+
+    mremap(ptr, sz, sz * 2, MREMAP_MAYMOVE);
 });
 
 unit("unit-test", "error-message")

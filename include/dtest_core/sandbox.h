@@ -157,6 +157,10 @@ struct LibC {
     void * (*reallocarray)(void *, size_t, size_t) = nullptr;
     void (*free)(void *) = nullptr;
 
+    void * (*mmap)(void *, size_t, int, int, int, __off_t) = nullptr;
+    void * (*mremap)(void *, size_t, size_t, int, ...) = nullptr;
+    int (*munmap)(void *, size_t) = nullptr;
+
     ssize_t (*send)(int, const void *, size_t, int) = nullptr;
     ssize_t (*sendto)(int, const void *, size_t, int, const struct sockaddr *, socklen_t) = nullptr;
     ssize_t (*recv)(int, void *, size_t, int) = nullptr;

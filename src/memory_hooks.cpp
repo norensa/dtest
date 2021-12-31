@@ -1,6 +1,8 @@
 #include <dtest_core/memory.h>
 #include <dtest_core/sandbox.h>
 #include <malloc.h>
+#include <sys/mman.h>
+#include <stdarg.h>
 
 using namespace dtest;
 
@@ -102,6 +104,45 @@ void free(void *__ptr) {
 
     if (__ptr && _mmgr_instance) _mmgr_instance->remove(__ptr);
     libc().free(__ptr);
+}
+
+// mmap & friends
+
+void * mmap(void *__addr, size_t __len, int __prot, int __flags, int __fd, __off_t __offset) {
+    void *ptr;
+
+    ptr = libc().mmap(__addr, __len, __prot, __flags, __fd, __offset);
+    if (ptr != MAP_FAILED && _mmgr_instance) {
+        _mmgr_instance->track_mapped((char *) ptr, __len);
+    }
+
+    return ptr;
+}
+
+void * mremap(void *__addr, size_t __old_len, size_t __new_len, int __flags, ...) {
+    void *ptr;
+    va_list args;
+    va_start(args, __flags);
+
+    if ((__flags & MREMAP_FIXED) != 0) {
+        ptr = libc().mremap(__addr, __old_len, __new_len, __flags, va_arg(args, void *));
+    }
+    else {
+        ptr = libc().mremap(__addr, __old_len, __new_len, __flags);
+    }
+
+    va_end(args);
+
+    if (ptr != MAP_FAILED && _mmgr_instance) {
+        _mmgr_instance->retrack_mapped((char *) __addr, __old_len, (char *) ptr, __new_len);
+    }
+
+    return ptr;
+}
+
+int munmap(void *__addr, size_t __len) {
+    if (__addr && _mmgr_instance) _mmgr_instance->remove_mapped((char *) __addr, __len);
+    return libc().munmap(__addr, __len);
 }
 
 // operator new overrides /////////////////////////////////////////////////////
