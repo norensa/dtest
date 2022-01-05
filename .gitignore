@@ -62,3 +62,7 @@ bin/
 # log files
 *.log
 *.log.*
+
+# script environments and configurations
+sbin/.env
+sbin/workers
