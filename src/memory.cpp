@@ -31,6 +31,7 @@ static TrackingException allocEx[] = {
     { 2, "GOMP_parallel", 0x26 },
     { 2, "GOMP_parallel", 0x2a },
     { 2, "GOMP_parallel", 0x3a },
+    { 2, "GOMP_parallel", 0x3d },
     { 2, "GOMP_parallel", 0x41 },
     { 1, "__tls_get_addr", 0x38 },
     { 1, "__tls_get_addr", 0x3c },
