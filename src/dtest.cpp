@@ -64,11 +64,25 @@ static void findTests(const char *path) {
     }
 }
 
+void printHelp() {
+    std::cout <<
+        "Usage: dtest <options> <test directories or files>\n"
+        "\n"
+        "Options\n"
+        "    --port <port-num>          Specifies the port number for the test driver.\n"
+        "    --workers <num-workers>    Specifies the number of remote workers available.\n"
+        "    --driver <address>         Connects to a remote test driver at <address>.\n"
+        "    --worker-id <id>           Runs a test worker, using <id> as its unique\n"
+        "                               identifier.\n"
+        "\n\n"
+    ;
+}
+
 void parseArguments(int argc, char *argv[], const char *cwd) {
     bool gotTestLocation = false;
 
     for (int i = 0; i < argc; ++i) {
-        if (strncmp(argv[i], "--", 2) == 0) {
+        if (argv[i][0] == '-' || strncmp(argv[i], "--", 2) == 0) {
             if (strcasecmp(argv[i], "--port") == 0) {
                 DriverContext::instance->setPort(atoi(argv[++i]));
             }
@@ -84,6 +98,10 @@ void parseArguments(int argc, char *argv[], const char *cwd) {
             }
             else if (strcasecmp(argv[i], "--worker-id") == 0) {
                 workerId = atoi(argv[++i]);
+            }
+            else if (strcasecmp(argv[i], "-h") == 0 || strcasecmp(argv[i], "--help") == 0) {
+                printHelp();
+                exit(0);
             }
             else {
                 std::cerr << "Unknown option '" << argv[i] << "'\n\n";
