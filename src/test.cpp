@@ -407,8 +407,11 @@ DriverContext::WorkerHandle DriverContext::_spawnWorker() {
 }
 
 void DriverContext::_start() {
-    _socket = Socket(0, 128);
-    _superSocket = Socket(0, 128);
+    _socket = Socket(_port, 128);
+    _address = _socket.address();
+
+    _superSocket = Socket(_port == 0 ? 0 : _port + 1, 128);
+    _superAddress = _superSocket.address();
 }
 
 uint32_t DriverContext::_waitForSuperEvent() {
@@ -546,6 +549,13 @@ void DriverContext::_join(Test *test) {
     }
 }
 
+void DriverContext::setAddress(const char *address) {
+    _address = Socket::str_to_ipv4(address);
+
+    _port = Socket::get_port(_address);
+    _superAddress = Socket::set_port(_address, _port == 0 ? 0 : _port + 1);
+}
+
 Message DriverContext::createUserMessage() {
     sandbox().lock();
 
@@ -633,12 +643,11 @@ void WorkerContext::_start(uint32_t id) {
     _id = id;
 
     _socket = Socket(0, 128);
-    _driverSocket = Socket(DriverContext::instance->_socket.address());
-    _superDriverSocket = Socket(DriverContext::instance->_superSocket.address());
+    auto superDriverSocket = Socket(DriverContext::instance->_superAddress);
 
     Message m;
     m << OpCode::WORKER_STARTED << _id << _socket.address();
-    m.send(_superDriverSocket);
+    m.send(superDriverSocket);
 }
 
 void WorkerContext::_waitForEvent() {
@@ -678,9 +687,10 @@ void WorkerContext::_waitForEvent() {
                 Test *t = (*it)->copy();
                 t->_run();
 
+                auto superDriverSocket = Socket(DriverContext::instance->_superAddress);
                 Message m;
                 m << OpCode::FINISHED_TEST << _id << t->_status << t->_detailedReport;
-                m.send(_superDriverSocket);
+                m.send(superDriverSocket);
             }
 
             _inTest = false;
@@ -723,7 +733,10 @@ Message WorkerContext::createUserMessage() {
 void WorkerContext::sendUserMessage(Message &message) {
     sandbox().lock();
 
-    message.send(_driverSocket);
+    {
+        auto driverSocket = Socket(DriverContext::instance->_address);
+        message.send(driverSocket);
+    }
 
     sandbox().unlock();
 }
@@ -745,9 +758,12 @@ Message WorkerContext::getUserMessage() {
 void WorkerContext::notify() {
     sandbox().lock();
 
-    Message m;
-    m << OpCode::NOTIFY << _id;
-    m.send(_driverSocket);
+    {
+        auto driverSocket = Socket(DriverContext::instance->_address);
+        Message m;
+        m << OpCode::NOTIFY << _id;
+        m.send(driverSocket);
+    }
 
     sandbox().unlock();
 }

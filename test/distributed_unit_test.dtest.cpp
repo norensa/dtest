@@ -1,5 +1,6 @@
 #include <dtest.h>
 #include <thread>
+#include <dtest_core/socket.h>
 
 module("distributed-unit-test")
 .dependsOn({
@@ -158,7 +159,7 @@ static sockaddr get_sock_addr(int fd) {
     sockaddr addr;
     socklen_t len = sizeof(addr);
     assert(getsockname(fd, &addr, &len) != -1);
-    return addr;
+    return dtest::Socket::self_address_ipv4(dtest::Socket::get_port(addr));
 }
 
 dunit("distributed-unit-test", "tcp")

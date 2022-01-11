@@ -307,6 +307,11 @@ private:
     Socket _socket;
     Socket _superSocket;
 
+    uint16_t _port = 0;
+
+    sockaddr _address;
+    sockaddr _superAddress;
+
     DriverContext() = default;
 
     WorkerHandle _spawnWorker();
@@ -326,6 +331,15 @@ private:
     void _join(Test *test);
 
 public:
+    void setPort(uint16_t port) {
+        _port = port;
+    }
+
+    void setAddress(const char *address);
+
+    void addWorker(uint32_t id) {
+        _workers[id] = WorkerHandle(id);
+    }
 
     Message createUserMessage() override;
 
@@ -353,8 +367,6 @@ private:
     uint32_t _notifyCount = 0;
     std::list<Message> _userMessages;
     Socket _socket;
-    Socket _driverSocket;
-    Socket _superDriverSocket;
     std::unordered_map<std::string, Test *> _tests;
     bool _inTest = false;
 

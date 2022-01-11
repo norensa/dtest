@@ -15,6 +15,9 @@ using namespace dtest;
 
 static std::vector<std::string> dynamicTests;
 
+bool runWorker = false;
+uint32_t workerId = 0;
+
 static void loadTests(const char *path) {
     std::cerr << "Loading " << path << "\n";
 
@@ -61,18 +64,79 @@ static void findTests(const char *path) {
     }
 }
 
-int main(int argc, char *argv[]) {
+void printHelp() {
+    std::cout <<
+        "Usage: dtest <options> <test directories or files>\n"
+        "\n"
+        "Options\n"
+        "    --port <port-num>          Specifies the port number for the test driver.\n"
+        "    --workers <num-workers>    Specifies the number of remote workers available.\n"
+        "    --driver <address>         Connects to a remote test driver at <address>.\n"
+        "    --worker-id <id>           Runs a test worker, using <id> as its unique\n"
+        "                               identifier.\n"
+        "\n\n"
+    ;
+}
 
+void parseArguments(int argc, char *argv[], const char *cwd) {
+    bool gotTestLocation = false;
+
+    for (int i = 0; i < argc; ++i) {
+        if (argv[i][0] == '-' || strncmp(argv[i], "--", 2) == 0) {
+            if (strcasecmp(argv[i], "--port") == 0) {
+                DriverContext::instance->setPort(atoi(argv[++i]));
+            }
+            else if (strcasecmp(argv[i], "--workers") == 0) {
+                uint32_t numWorkers = atoi(argv[++i]);
+                for (uint32_t i = 0; i < numWorkers; ++i) {
+                    DriverContext::instance->addWorker(i);
+                }
+            }
+            else if (strcasecmp(argv[i], "--driver") == 0) {
+                runWorker = true;
+                DriverContext::instance->setAddress(argv[++i]);
+            }
+            else if (strcasecmp(argv[i], "--worker-id") == 0) {
+                workerId = atoi(argv[++i]);
+            }
+            else if (strcasecmp(argv[i], "-h") == 0 || strcasecmp(argv[i], "--help") == 0) {
+                printHelp();
+                exit(0);
+            }
+            else {
+                std::cerr << "Unknown option '" << argv[i] << "'\n\n";
+                exit(1);
+            }
+        }
+        else if (access(argv[i], F_OK) == 0) {
+            findTests(argv[i]);
+            gotTestLocation = true;
+        }
+        else {
+            std::cerr << "Argument '" << argv[i] << "' is not a valid option or test location.\n\n";
+            exit(1);
+        }
+    }
+
+    if (! gotTestLocation) {
+        findTests(cwd);
+    }
+}
+
+int main(int argc, char *argv[]) {
     char cwd[PATH_MAX];
     getcwd(cwd, PATH_MAX);
 
-    if (argc > 1) {
-        for (int i = 1; i < argc; ++i) {
-            findTests(argv[i]);
+    parseArguments(argc - 1, argv + 1, cwd);
+
+    if (runWorker) {
+        try {
+            Test::runWorker(workerId);
+            exit(0);
         }
-    }
-    else {
-        findTests(cwd);
+        catch (...) {
+            exit(1);
+        }
     }
 
     Test::logStatsToStderr(true);

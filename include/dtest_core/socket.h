@@ -108,7 +108,12 @@ public:
     static std::string ipv4_to_str(const sockaddr &addr);
 
     static sockaddr str_to_ipv4(const std::string &ip, uint16_t port);
+    static sockaddr str_to_ipv4(const std::string &host, const std::string &port);
     static sockaddr str_to_ipv4(const std::string &str);
+
+    static uint16_t get_port(const sockaddr &addr);
+
+    static sockaddr set_port(const sockaddr &addr, uint16_t port);
 };
 
 struct sockaddr_in_hash {

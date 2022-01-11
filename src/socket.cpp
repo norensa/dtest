@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <poll.h>
 #include <unordered_map>
+#include <netdb.h>
 
 using namespace dtest;
 
@@ -149,6 +150,9 @@ Socket::Socket(uint16_t port, int maxWaitingQueueLength) {
             std::string("Error getting socket address. ") + strerror(errno)
         );
     }
+
+    port = get_port(_addr);
+    _addr = self_address_ipv4(port);
 }
 
 void Socket::send(void *data, size_t len) {
@@ -267,6 +271,9 @@ Socket * Socket::pollOrAcceptOrTimeout() {
                 _openConnections[incoming] = new Socket(incoming, addr);
             }
         }
+        else if ((p.revents & POLLIN)) {
+            incoming = p.fd;
+        }
         else if (
             (p.revents & POLLRDHUP)
             || (p.revents & POLLERR)
@@ -277,9 +284,6 @@ Socket * Socket::pollOrAcceptOrTimeout() {
             c->close();
             delete c;
             _openConnections.erase(p.fd);
-        }
-        else if ((p.revents & POLLIN)) {
-            incoming = p.fd;
         }
     }
 
@@ -355,20 +359,58 @@ sockaddr Socket::str_to_ipv4(const std::string &ip, uint16_t port) {
     return addr;
 }
 
+sockaddr Socket::str_to_ipv4(const std::string &host, const std::string &port) {
+    addrinfo hints;
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = 0;
+    hints.ai_flags = 0;
+    hints.ai_protocol = 0;
+
+    addrinfo *result;
+    int s = getaddrinfo(host.c_str(), port.c_str(), &hints, &result);
+    if (s != 0) {
+        fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
+        exit(EXIT_FAILURE);
+    }
+
+    if (result != nullptr) {
+        sockaddr addr = *result->ai_addr;
+        freeaddrinfo(result);
+        return addr;
+    }
+
+    freeaddrinfo(result);
+    throw std::invalid_argument(
+        "Failed to resolve host '" + host + ':' + port + "'."
+    );
+}
+
 sockaddr Socket::str_to_ipv4(const std::string &str) {
 
-    char ip[INET_ADDRSTRLEN + 6];
-    strncpy(ip, str.c_str(), INET_ADDRSTRLEN + 6);
-    char *colon = std::strchr(ip, ':');
+    char host[INET_ADDRSTRLEN + 6];
+    strncpy(host, str.c_str(), INET_ADDRSTRLEN + 6);
+    char *colon = std::strchr(host, ':');
 
     if (colon == NULL) {
         throw std::invalid_argument(
-            "Error parsing IP address '" + std::string(ip) + "'. "
+            "Error parsing address '" + std::string(host) + "'. "
         );
     }
 
     *colon = '\0';
-    uint16_t port = std::atoi(colon + 1);
+    return str_to_ipv4(host, colon + 1);
+}
 
-    return str_to_ipv4(ip, port);
+uint16_t Socket::get_port(const sockaddr &addr) {
+    sockaddr_in *addr_in = (sockaddr_in *) &addr;
+    return ntohs(addr_in->sin_port);
+}
+
+sockaddr Socket::set_port(const sockaddr &addr, uint16_t port) {
+    sockaddr a = addr;
+    sockaddr_in *addr_in = (sockaddr_in *) &a;
+    addr_in->sin_port = htons(port);
+    return a;
 }
