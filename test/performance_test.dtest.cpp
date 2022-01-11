@@ -25,20 +25,20 @@ perf("performance-test", "too-slow")
 perf("performance-test", "pass-ratio")
 .performanceMarginAsBaselineRatio(0.7)
 .body([] {
-    for (int i = 0; i < 4000000; ++i);
+    for (int i = 0; i < 20000000; ++i);
 })
 .baseline([] {
-    for (int i = 0; i < 8000000; ++i);
+    for (int i = 0; i < 80000000; ++i);
 });
 
 perf("performance-test", "too-slow-ratio")
 .performanceMarginAsBaselineRatio(0.7)
 .expect(Status::TOO_SLOW)
 .body([] {
-    for (int i = 0; i < 8000000; ++i);
+    for (int i = 0; i < 80000000; ++i);
 })
 .baseline([] {
-    for (int i = 0; i < 4000000; ++i);
+    for (int i = 0; i < 20000000; ++i);
 });
 
 perf("performance-test", "error-msg")
