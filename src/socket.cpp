@@ -150,6 +150,9 @@ Socket::Socket(uint16_t port, int maxWaitingQueueLength) {
             std::string("Error getting socket address. ") + strerror(errno)
         );
     }
+
+    port = get_port(_addr);
+    _addr = self_address_ipv4(port);
 }
 
 void Socket::send(void *data, size_t len) {
