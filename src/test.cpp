@@ -8,6 +8,11 @@ using namespace dtest;
 
 ///////////////////////////////////////////////////////////////////////////////
 
+void Test::_skip() {
+    _status = Status::SKIP;
+    _success = true;
+}
+
 void Test::_run() {
 
     if (_enabled) {
@@ -40,8 +45,7 @@ void Test::_run() {
         _detailedReport = s.str();
     }
     else {
-        _status = Status::SKIP;
-        _success = true;
+        _skip();
     }
 }
 
@@ -109,6 +113,7 @@ void Test::setGlobalModuleDependencies(
 
 bool Test::runAll(
     const std::vector<std::pair<std::string, std::string>> &config,
+    const std::unordered_set<std::string> &modules,
     std::ostream &out
 ) {
 
@@ -196,7 +201,8 @@ bool Test::runAll(
             std::cerr << "RUNNING TEST #" << testnum << "  " << shortTestName  << "   ";
         }
 
-        test->_run();
+        if (modules.empty() || modules.count(test->_module) != 0) test->_run();
+        else test->_skip();
 
         if (test->_status == Status::SKIP) {
             if (_logStatsToStderr) {

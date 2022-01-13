@@ -10,13 +10,15 @@
 #include <dtest_core/util.h>
 #include <vector>
 #include <string>
+#include <unordered_set>
 
 using namespace dtest;
 
 static std::vector<std::string> dynamicTests;
 
-bool runWorker = false;
-uint32_t workerId = 0;
+static bool runWorker = false;
+static uint32_t workerId = 0;
+static std::unordered_set<std::string> modules;
 
 static void loadTests(const char *path) {
     std::cerr << "Loading " << path << "\n";
@@ -74,6 +76,8 @@ void printHelp() {
         "    --driver <address>         Connects to a remote test driver at <address>.\n"
         "    --worker-id <id>           Runs a test worker, using <id> as its unique\n"
         "                               identifier.\n"
+        "    --module <test-module>     Runs one or more test modules and skips all other\n"
+        "                               tests.\n"
         "\n\n"
     ;
 }
@@ -98,6 +102,9 @@ void parseArguments(int argc, char *argv[], const char *cwd) {
             }
             else if (strcasecmp(argv[i], "--worker-id") == 0) {
                 workerId = atoi(argv[++i]);
+            }
+            else if (strcasecmp(argv[i], "--module") == 0) {
+                modules.insert(argv[++i]);
             }
             else if (strcasecmp(argv[i], "-h") == 0 || strcasecmp(argv[i], "--help") == 0) {
                 printHelp();
@@ -151,6 +158,7 @@ int main(int argc, char *argv[]) {
             { "working_dir", cwd },
             { "loaded_test_files", jsonify(dynamicTests, 2) },
         },
+        modules,
         logFile
     );
     logFile.close();

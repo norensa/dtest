@@ -74,6 +74,8 @@ protected:
 
 private:
 
+    void _skip();
+
     void _run();
 
 public:
@@ -165,6 +167,7 @@ public:
 
     static bool runAll(
         const std::vector<std::pair<std::string, std::string>> &config = {},
+        const std::unordered_set<std::string> &modules = {},
         std::ostream &out = std::cout
     );
 
