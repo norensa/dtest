@@ -8,7 +8,7 @@ ENV=
 while [[ $# -gt 0 ]]; do
     case $1 in
         --env)
-            ENV="$ENV export $2;"
+            ENV="$ENV export $2 ;"
             shift
             shift
         ;;
@@ -37,6 +37,7 @@ for m in $(cat $DIR/workers) ; do
 done
 wait
 
+$ENV
 $EXEC --port $PORT --workers $(wc -l $DIR/workers | awk '{ print $1 }') $TEST_DIR &
 DRIVER=$!
 
