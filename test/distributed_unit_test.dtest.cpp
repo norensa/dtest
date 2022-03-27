@@ -85,6 +85,21 @@ dunit("distributed-unit-test", "worker-mem-leak")
     assert(true);
 });
 
+dunit("unit-test", "worker-id")
+.workers(4)
+.driver([] {
+    uint32_t id;
+    for (auto i = 0; i < 4; ++i) {
+        dtest_recvMsg() >> id;
+        std::cout << id << '\n';
+    }
+})
+.worker([] {
+    uint32_t id = dtest_worker_id();
+    assert(id < 4);
+    dtest_sendMsg(id);
+});
+
 dunit("distributed-unit-test", "wait-notify")
 .workers(4)
 .driver([] {

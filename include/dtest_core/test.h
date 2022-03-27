@@ -226,6 +226,10 @@ public:
     static inline Context * instance() {
         return _currentCtx;
     }
+
+    virtual uint32_t workerId() const {
+        return -1;
+    }
 };
 
 class DriverContext : public Context {
@@ -390,6 +394,10 @@ public:
     void wait(uint32_t n = -1u) override;
 
     static Lazy<WorkerContext> instance;
+
+    uint32_t workerId() const override {
+        return _id;
+    }
 };
 
 class AssertionException : public SandboxException {
