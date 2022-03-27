@@ -95,11 +95,13 @@ dunit("unit-test", "worker-id")
     }
 
     assert(dtest_worker_id() == 0);
+    assert(dtest_num_workers() == 4);
 })
 .worker([] {
     uint32_t id = dtest_worker_id();
     dtest_send_msg(id);
     assert(id <= 4);
+    assert(dtest_num_workers() == 4);
 });
 
 dunit("distributed-unit-test", "wait-notify")

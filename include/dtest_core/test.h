@@ -228,6 +228,10 @@ public:
     }
 
     virtual uint32_t workerId() const = 0;
+
+    uint16_t numWorkers() const {
+        return _currentTest->_numWorkers;
+    }
 };
 
 class DriverContext : public Context {

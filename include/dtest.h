@@ -18,6 +18,8 @@ using Status = dtest::Test::Status;
 
 #define module(name) static auto __dtest_concat(__module_controller__uid_, __COUNTER__) = (*(new dtest::ModuleController(name)))
 
+#define dtest_num_workers() dtest::Context::instance()->numWorkers()
+
 #define dtest_worker_id() dtest::Context::instance()->workerId()
 
 ////
