@@ -227,9 +227,7 @@ public:
         return _currentCtx;
     }
 
-    virtual uint32_t workerId() const {
-        return -1;
-    }
+    virtual uint32_t workerId() const = 0;
 };
 
 class DriverContext : public Context {
@@ -358,6 +356,10 @@ public:
 
     void wait(uint32_t n = -1u) override;
 
+    uint32_t workerId() const {
+        return 0;
+    }
+
     static Lazy<DriverContext> instance;
 };
 
@@ -393,11 +395,11 @@ public:
 
     void wait(uint32_t n = -1u) override;
 
-    static Lazy<WorkerContext> instance;
-
     uint32_t workerId() const override {
         return _id;
     }
+
+    static Lazy<WorkerContext> instance;
 };
 
 class AssertionException : public SandboxException {

@@ -390,7 +390,7 @@ void DriverContext::WorkerHandle::terminate() {
 // DriverContext ///////////////////////////////////////////////////////////////
 
 DriverContext::WorkerHandle DriverContext::_spawnWorker() {
-    uint32_t id = _workers.size();
+    uint32_t id = _workers.size() + 1;
     pid_t pid = fork();
 
     if (pid == 0) {

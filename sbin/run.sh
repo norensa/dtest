@@ -44,13 +44,13 @@ DRIVER=$!
 id=0
 WORKERS=()
 for m in $(cat $DIR/workers) ; do
+    let id=id+1
     ssh -A $CLUSTER_USER@$m "sh -c '\
         cd $DTEST_HOME ; \
         $ENV \
         nohup $EXEC --driver $(hostname):$PORT --worker-id $id tmp > /dev/null 2>&1 & \
         echo \$! > tmp/pid \
     '" &
-    let id=id+1
 done
 
 wait $DRIVER

@@ -93,11 +93,13 @@ dunit("unit-test", "worker-id")
         dtest_recv_msg(id);
         std::cout << id << '\n';
     }
+
+    assert(dtest_worker_id() == 0);
 })
 .worker([] {
     uint32_t id = dtest_worker_id();
-    assert(id < 4);
     dtest_send_msg(id);
+    assert(id <= 4);
 });
 
 dunit("distributed-unit-test", "wait-notify")
