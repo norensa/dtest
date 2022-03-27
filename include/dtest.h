@@ -53,8 +53,8 @@ using Status = dtest::Test::Status;
 #define dtest_notify() dtest::Context::instance()->notify()
 #define dtest_wait(n) dtest::Context::instance()->wait(n)
 
-#define dtest_sendMsg(m) dtest::Context::instance()->sendUserMessage(dtest::Context::instance()->createUserMessage() << m)
-#define dtest_recvMsg() dtest::Context::instance()->getUserMessage()
+#define dtest_send_msg(m) dtest::Context::instance()->sendUserMessage(dtest::Context::instance()->createUserMessage() << m)
+#define dtest_recv_msg(m) dtest::Context::instance()->getUserMessage() >> m
 
 ////
 

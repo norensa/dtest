@@ -90,14 +90,14 @@ dunit("unit-test", "worker-id")
 .driver([] {
     uint32_t id;
     for (auto i = 0; i < 4; ++i) {
-        dtest_recvMsg() >> id;
+        dtest_recv_msg(id);
         std::cout << id << '\n';
     }
 })
 .worker([] {
     uint32_t id = dtest_worker_id();
     assert(id < 4);
-    dtest_sendMsg(id);
+    dtest_send_msg(id);
 });
 
 dunit("distributed-unit-test", "wait-notify")
@@ -116,18 +116,18 @@ dunit("distributed-unit-test", "user-message")
 .driver([] {
     int x;
     x = 1;
-    dtest_sendMsg(x);
+    dtest_send_msg(x);
     for (auto i = 0; i < 4; ++i) {
-        dtest_recvMsg() >> x;
+        dtest_recv_msg(x);
         assert (x == 2);
     }
 })
 .worker([] {
     int x;
-    dtest_recvMsg() >> x;
+    dtest_recv_msg(x);
     assert (x == 1);
     x = 2;
-    dtest_sendMsg(x);
+    dtest_send_msg(x);
 });
 
 static int tcp_server_sock() {
@@ -182,7 +182,7 @@ dunit("distributed-unit-test", "tcp")
 .driver([] {
     auto fd = tcp_server_sock();
     auto addr = get_sock_addr(fd);
-    dtest_sendMsg(addr);
+    dtest_send_msg(addr);
 
     int conn = accept(fd, NULL, NULL);
     int x;
@@ -194,7 +194,7 @@ dunit("distributed-unit-test", "tcp")
 })
 .worker([] {
     sockaddr addr;
-    dtest_recvMsg() >> addr;
+    dtest_recv_msg(addr);
 
     auto fd = tcp_connect(addr);
     int x = 1234;
@@ -208,7 +208,7 @@ dunit("distributed-unit-test", "tcp-faulty")
 .driver([] {
     auto fd = tcp_server_sock();
     auto addr = get_sock_addr(fd);
-    dtest_sendMsg(addr);
+    dtest_send_msg(addr);
 
     int conn = accept(fd, NULL, NULL);
     int x;
@@ -221,7 +221,7 @@ dunit("distributed-unit-test", "tcp-faulty")
 })
 .worker([] {
     sockaddr addr;
-    dtest_recvMsg() >> addr;
+    dtest_recv_msg(addr);
 
     auto fd = tcp_connect(addr);
     for (int i = 0; i < 1000; ++i) {
@@ -235,7 +235,7 @@ dunit("distributed-unit-test", "udp")
 .driver([] {
     auto fd = udp_server_sock();
     auto addr = get_sock_addr(fd);
-    dtest_sendMsg(addr);
+    dtest_send_msg(addr);
 
     int x;
     recvfrom(fd, &x, sizeof(x), 0, NULL, NULL);
@@ -245,7 +245,7 @@ dunit("distributed-unit-test", "udp")
 })
 .worker([] {
     sockaddr addr;
-    dtest_recvMsg() >> addr;
+    dtest_recv_msg(addr);
 
     auto fd = udp_sock();
     int x = 1234;
@@ -259,7 +259,7 @@ dunit("distributed-unit-test", "udp-faulty")
 .driver([] {
     auto fd = udp_server_sock();
     auto addr = get_sock_addr(fd);
-    dtest_sendMsg(addr);
+    dtest_send_msg(addr);
 
     int x;
     for (int i = 0; i < 1000; ++i) {
@@ -274,7 +274,7 @@ dunit("distributed-unit-test", "udp-faulty")
 })
 .worker([] {
     sockaddr addr;
-    dtest_recvMsg() >> addr;
+    dtest_recv_msg(addr);
 
     auto fd = udp_sock();
     for (int i = 0; i < 1000; ++i) {
@@ -296,7 +296,7 @@ dunit("distributed-unit-test", "runaway-allocations-during-message")
 
     int x = 5;
     for (auto i = 0; i < 1000; ++i) {
-        dtest_sendMsg(x);
+        dtest_send_msg(x);
     }
 
     run = false;
@@ -313,7 +313,7 @@ dunit("distributed-unit-test", "runaway-allocations-during-message")
 
     int x;
     for (auto i = 0; i < 1000; ++i) {
-        dtest_recvMsg() >> x;
+        dtest_recv_msg(x);
     }
 
     run = false;
