@@ -104,6 +104,15 @@ dunit("unit-test", "worker-id")
     assert(dtest_num_workers() == 4);
 });
 
+dunit("unit-test", "is-driver")
+.workers(1)
+.driver([] {
+    assert(dtest_is_driver());
+})
+.worker([] {
+    assert(! dtest_is_driver());
+});
+
 dunit("distributed-unit-test", "wait-notify")
 .workers(4)
 .driver([] {

@@ -172,6 +172,10 @@ public:
     );
 
     static void runWorker(uint32_t id);
+
+    static bool isDriver() {
+        return _isDriver;
+    }
 };
 
 

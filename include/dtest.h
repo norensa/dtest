@@ -22,6 +22,8 @@ using Status = dtest::Test::Status;
 
 #define dtest_worker_id() dtest::Context::instance()->workerId()
 
+#define dtest_is_driver() dtest::Test::isDriver()
+
 ////
 
 #include <dtest_core/unit_test.h>
