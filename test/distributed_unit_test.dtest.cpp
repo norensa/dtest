@@ -332,3 +332,16 @@ dunit("distributed-unit-test", "runaway-allocations-during-message")
     run = false;
     t.join();
 });
+
+static bool initialized = false;
+dunit("distributed-unit-test", "onInit")
+.onInit([] {
+    initialized = true;
+})
+.workers(1)
+.driver([] {
+    assert(initialized);
+})
+.worker([] {
+    assert(initialized);
+});

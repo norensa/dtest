@@ -27,7 +27,9 @@ void DistributedUnitTest::_workerRun() {
             sandbox().resourceSnapshot(_usedResources);
             _status = Status::FAIL;
 
+            timeOf(_onInit);
             _workerBodyTime = timeOf(_workerBody);
+            timeOf(_onComplete);
 
             _status = Status::PASS;
             sandbox().resourceSnapshot(_usedResources);
