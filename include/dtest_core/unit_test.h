@@ -11,6 +11,8 @@ protected:
     // configuration
     uint64_t _timeout = 10 * 1e9;       // 10 seconds
     bool _ignoreMemoryLeak = false;
+    size_t _memoryBytesLimit = (size_t) -1;
+    size_t _memoryBlocksLimit = (size_t) -1;
     Buffer _input;
     Buffer _out;
     Buffer _err;
@@ -104,6 +106,16 @@ public:
 
     inline UnitTest & expect(Status status) {
         Test::expect(status);
+        return *this;
+    }
+
+    inline UnitTest & memoryBytesLimit(size_t bytes) {
+        _memoryBytesLimit = bytes;
+        return *this;
+    }
+
+    inline UnitTest & memoryBlocksLimit(size_t blocks) {
+        _memoryBlocksLimit = blocks;
         return *this;
     }
 

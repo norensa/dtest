@@ -127,6 +127,8 @@ void Memory::track(void *ptr, size_t size) {
         _blocks.insert({ ptr, { size, std::move(callstack) } });
         _allocateSize += size;
         ++_allocateCount;
+        _maxAllocate = std::max(_maxAllocate, _allocateSize - _freeSize);
+        _maxAllocateCount = std::max(_maxAllocateCount, _allocateCount - _freeCount);
         _mtx.unlock();
     }
 
@@ -141,6 +143,8 @@ void Memory::track_mapped(char *ptr, size_t size) {
         _mtx.lock();
         _orderedBlocks.insert({ ptr + size - 1, { size, std::move(callstack) } });
         _allocateSize += size;
+        _maxAllocate = std::max(_maxAllocate, _allocateSize - _freeSize);
+        _maxAllocateCount = std::max(_maxAllocateCount, _allocateCount - _freeCount);
         _mtx.unlock();
     }
 
@@ -179,6 +183,8 @@ void Memory::retrack(void *oldPtr, void *newPtr, size_t newSize) {
     _blocks.erase(it);
     _blocks.insert({ newPtr, std::move(alloc) });
     _allocateSize += newSize - oldSize;
+    _maxAllocate = std::max(_maxAllocate, _allocateSize - _freeSize);
+    _maxAllocateCount = std::max(_maxAllocateCount, _allocateCount - _freeCount);
 
     _mtx.unlock();
     _exit();
@@ -266,6 +272,8 @@ void Memory::retrack_mapped(char *oldPtr, size_t oldSize, char *newPtr, size_t n
     if (_canTrackAlloc(callstack)) {
         _orderedBlocks.insert({ newPtr + newSize - 1, { newSize, std::move(callstack) } });
         _allocateSize += newSize;
+        _maxAllocate = std::max(_maxAllocate, _allocateSize - _freeSize);
+        _maxAllocateCount = std::max(_maxAllocateCount, _allocateCount - _freeCount);
     }
 
     _mtx.unlock();

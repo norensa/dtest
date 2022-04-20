@@ -13,6 +13,8 @@
 namespace dtest {
 
 struct ResourceSnapshot {
+    bool initialized = false;
+
     struct Quantity {
         size_t size = 0;
         size_t count = 0;
@@ -21,6 +23,7 @@ struct ResourceSnapshot {
     struct {
         Quantity allocate;
         Quantity deallocate;
+        Quantity max;
     } memory;
 
     struct {

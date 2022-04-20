@@ -29,6 +29,7 @@ public:
         PASS,
         SKIP,
         PASS_WITH_MEMORY_LEAK,
+        MEMORY_LIMIT_EXCEEDED,
         TOO_SLOW,
         TIMEOUT,
         FAIL,

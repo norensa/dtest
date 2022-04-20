@@ -52,7 +52,8 @@ void Test::_run() {
 std::string Test::__statusString[] = {
     "PASS",
     "SKIP",
-    "PASS (with memory leak)",
+    "PASS (memory leak)",
+    "PASS (memory limit exceeded)",
     "TOO SLOW",
     "TIMEOUT",
     "FAIL",
@@ -62,7 +63,8 @@ std::string Test::__statusString[] = {
 static std::string __statusStringPastTense[] = {
     "PASSED",
     "SKIPPED",
-    "PASSED (with memory leak)",
+    "PASSED (memory leak)",
+    "PASSED (memory limit exceeded)",
     "TOO SLOW",
     "TIMED OUT",
     "FAILED",

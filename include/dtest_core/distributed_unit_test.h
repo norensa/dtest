@@ -106,6 +106,16 @@ public:
         return *this;
     }
 
+    inline DistributedUnitTest & memoryBytesLimit(size_t bytes) {
+        UnitTest::memoryBytesLimit(bytes);
+        return *this;
+    }
+
+    inline DistributedUnitTest & memoryBlocksLimit(size_t blocks) {
+        UnitTest::memoryBlocksLimit(blocks);
+        return *this;
+    }
+
     inline DistributedUnitTest & disable() {
         UnitTest::disable();
         return *this;

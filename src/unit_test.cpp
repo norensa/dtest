@@ -15,10 +15,26 @@ void UnitTest::_checkMemoryLeak() {
     ) {
         _status = Status::PASS_WITH_MEMORY_LEAK;
         err(
-            "WARNING: Possible memory leak detected. "
+            "WARNING - possible memory leak detected: "
             + formatSize(_usedResources.memory.allocate.size - _usedResources.memory.deallocate.size) + " ("
             + std::to_string(_usedResources.memory.allocate.count - _usedResources.memory.deallocate.count)
             + " block(s)) difference." + sandbox().memoryReport()
+        );
+    }
+
+    if (_usedResources.memory.max.size > _memoryBytesLimit) {
+        _status = Status::MEMORY_LIMIT_EXCEEDED;
+        err(
+            "WARNING - exceeded memory limit of " + formatSize(_memoryBytesLimit)
+            + " bytes"
+        );
+    }
+
+    if (_usedResources.memory.max.count > _memoryBlocksLimit) {
+        _status = Status::MEMORY_LIMIT_EXCEEDED;
+        err(
+            "WARNING - exceeded memory limit of " + std::to_string(_memoryBlocksLimit)
+            + " blocks"
         );
     }
 }
@@ -95,13 +111,24 @@ std::string UnitTest::_memoryReport() {
         s << "\n  \"size\": " << _usedResources.memory.allocate.size;
         s << ",\n  \"blocks\": " << _usedResources.memory.allocate.count;
         s << "\n}";
-        if (_usedResources.memory.deallocate.size > 0) s << ",\n";
+        if (
+            _usedResources.memory.deallocate.size > 0
+            || _usedResources.memory.max.size > 0
+        ) s << ",\n";
     }
 
     if (_usedResources.memory.deallocate.size > 0) {
         s << "\"freed\": {";
         s << "\n  \"size\": " << _usedResources.memory.deallocate.size;
         s << ",\n  \"blocks\": " << _usedResources.memory.deallocate.count;
+        s << "\n}";
+        if (_usedResources.memory.max.size > 0) s << ",\n";
+    }
+
+    if (_usedResources.memory.max.size > 0) {
+        s << "\"max\": {";
+        s << "\n  \"size\": " << _usedResources.memory.max.size;
+        s << ",\n  \"blocks\": " << _usedResources.memory.max.count;
         s << "\n}";
     }
 

@@ -277,3 +277,41 @@ unit("unit-test", "runaway-allocations-during-error-log")
     run = false;
     t.join();
 });
+
+unit("unit-test", "memory-bytes-limit")
+.memoryBytesLimit(1)
+.body([] {
+    auto p1 = malloc(1);
+    free(p1);
+    auto p2 = malloc(1);
+    free(p2);
+});
+
+unit("unit-test", "memory-bytes-limit-fail")
+.memoryBytesLimit(1)
+.expect(Status::MEMORY_LIMIT_EXCEEDED)
+.body([] {
+    auto p1 = malloc(1);
+    auto p2 = malloc(1);
+    free(p1);
+    free(p2);
+});
+
+unit("unit-test", "memory-blocks-limit")
+.memoryBlocksLimit(1)
+.body([] {
+    auto p1 = malloc(1024);
+    free(p1);
+    auto p2 = malloc(1024);
+    free(p2);
+});
+
+unit("unit-test", "memory-blocks-limit-fail")
+.memoryBlocksLimit(1)
+.expect(Status::MEMORY_LIMIT_EXCEEDED)
+.body([] {
+    auto p1 = malloc(1024);
+    auto p2 = malloc(1024);
+    free(p1);
+    free(p2);
+});

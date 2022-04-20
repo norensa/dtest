@@ -29,6 +29,8 @@ private:
     size_t _freeSize = 0;
     size_t _allocateCount = 0;
     size_t _freeCount = 0;
+    size_t _maxAllocate = 0;
+    size_t _maxAllocateCount = 0;
 
     static thread_local size_t _locked;
 
@@ -77,6 +79,10 @@ public:
     void remove_mapped(char *ptr, size_t size);
 
     void clear();
+
+    void resetMaxAllocation() {
+        _maxAllocate = 0;
+    }
 
     std::string report();
 };

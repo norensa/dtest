@@ -118,6 +118,16 @@ public:
         return *this;
     }
 
+    inline PerformanceTest & memoryBytesLimit(size_t bytes) {
+        UnitTest::memoryBytesLimit(bytes);
+        return *this;
+    }
+
+    inline PerformanceTest & memoryBlocksLimit(size_t blocks) {
+        UnitTest::memoryBlocksLimit(blocks);
+        return *this;
+    }
+
     inline PerformanceTest & disable() {
         UnitTest::disable();
         return *this;

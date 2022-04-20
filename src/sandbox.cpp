@@ -319,11 +319,20 @@ bool Sandbox::run(
 }
 
 void Sandbox::resourceSnapshot(ResourceSnapshot &snapshot) {
+    // initialization
+    if (! snapshot.initialized) {
+        _memory.resetMaxAllocation();
+        snapshot.initialized = true;
+    }
+
     snapshot.memory.allocate.size = _memory._allocateSize - snapshot.memory.allocate.size;
     snapshot.memory.allocate.count = _memory._allocateCount - snapshot.memory.allocate.count;
 
     snapshot.memory.deallocate.size = _memory._freeSize - snapshot.memory.deallocate.size;
     snapshot.memory.deallocate.count = _memory._freeCount - snapshot.memory.deallocate.count;
+
+    snapshot.memory.max.size = _memory._maxAllocate;
+    snapshot.memory.max.count = _memory._maxAllocateCount;
 
     snapshot.network.send.size = _network._sendSize - snapshot.network.send.size;
     snapshot.network.send.count = _network._sendCount - snapshot.network.send.count;
