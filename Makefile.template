@@ -18,6 +18,8 @@ CXXFLAGS = -std=c++11 -march=native -fPIC
 
 ################################################################################
 
+DTEST_REPO=https://git.cs.usask.ca/discus/dtest.git
+
 LDFLAGS = -Wl,-E -Wl,-export-dynamic
 
 DEPFLAGS = -MM
@@ -60,7 +62,7 @@ clean-dep :
 # test
 
 dtest:
-	@[ ! -d "dtest" ] && git clone -q https://github.com/noahorensa/dtest.git || :
+	@[ ! -d "dtest" ] && git clone -q $(DTEST_REPO) || :
 	@git -C dtest pull -q
 	@$(MAKE) -C dtest --no-print-directory $(DTEST)
 
