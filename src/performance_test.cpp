@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2021 Noah Orensa.
+ * Licensed under the MIT license. See LICENSE file in the project root for details.
+*/
+
 #include <dtest_core/performance_test.h>
 #include <dtest_core/util.h>
 #include <dtest_core/time_of.h>

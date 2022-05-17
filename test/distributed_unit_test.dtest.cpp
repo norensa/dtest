@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2021 Noah Orensa.
+ * Licensed under the MIT license. See LICENSE file in the project root for details.
+*/
+
 #include <dtest.h>
 #include <thread>
 #include <dtest_core/socket.h>

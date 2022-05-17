@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2021 Noah Orensa.
+ * Licensed under the MIT license. See LICENSE file in the project root for details.
+*/
+
 #include <dtest_core/call_stack.h>
 #include <dtest_core/sandbox.h>
 #include <execinfo.h>
