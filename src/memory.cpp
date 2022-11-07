@@ -49,6 +49,7 @@ static TrackingException deallocEx[] = {
     { 0, "_dl_deallocate_tls", (size_t) -1 },
     { 0, "_dl_deallocate_tls", (size_t) -1 },
     { 0, "pthread_create", (size_t) -1 },
+    { 0, "_IO_setb", (size_t) -1 },
 };
 const size_t nDeallocEx = sizeof(deallocEx) / sizeof(TrackingException);
 
