@@ -173,7 +173,7 @@ bool Test::runAll(
         out << ",\n";
     }
 
-    out << "  \"tests\": [";
+    out << "  \"tests\": {";
 
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -227,8 +227,7 @@ bool Test::runAll(
                 out << ",";
             }
 
-            out << "\n    {";
-            out << "\n      \"name\": \"" << testname << "\",";
+            out << "\n    \"" << testname << "\": {";
             if (! test->_dependencies.empty()) {
                 out << "\n      \"dependencies\": " << jsonify(test->_dependencies, 6) << ",";
             }
@@ -285,7 +284,7 @@ bool Test::runAll(
 
     auto end = std::chrono::high_resolution_clock::now();
 
-    out << "\n  ]";
+    out << "\n  }";
 
     // summary
     size_t failedCount = runCount - successCount;
