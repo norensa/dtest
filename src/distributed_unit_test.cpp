@@ -29,15 +29,19 @@ void DistributedUnitTest::_workerRun() {
         [this] {
             _configure();
 
-            sandbox().resourceSnapshot(_usedResources);
             _status = Status::FAIL;
 
             timeOf(_onInit);
+
+            sandbox().resourceSnapshot(_usedResources);
+
             _workerBodyTime = timeOf(_workerBody);
+
+            sandbox().resourceSnapshot(_usedResources);
+
             timeOf(_onComplete);
 
             _status = Status::PASS;
-            sandbox().resourceSnapshot(_usedResources);
         },
         [this] (Message &m) {
             _checkMemoryLeak();

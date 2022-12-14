@@ -61,15 +61,19 @@ void UnitTest::_driverRun() {
         [this] {
             _configure();
 
-            sandbox().resourceSnapshot(_usedResources);
             _status = Status::FAIL;
 
             _initTime = timeOf(_onInit);
+
+            sandbox().resourceSnapshot(_usedResources);
+
             _bodyTime = timeOf(_body);
+
+            sandbox().resourceSnapshot(_usedResources);
+
             _completeTime = timeOf(_onComplete);
 
             _status = Status::PASS;
-            sandbox().resourceSnapshot(_usedResources);
         },
         [this] (Message &m) {
             _checkMemoryLeak();
