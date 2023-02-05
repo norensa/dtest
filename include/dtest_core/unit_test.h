@@ -33,6 +33,7 @@ protected:
     uint64_t _completeTime = 0;
 
     bool _inProcessSandbox = false;
+    bool _resourceSnapshotBodyOnly = false;
 
     virtual void _configure();
 
@@ -146,6 +147,11 @@ public:
 
     inline UnitTest & input(const std::string &input) {
         _input = { input.data(), input.size() };
+        return *this;
+    }
+
+    inline UnitTest & resourceSnapshotBodyOnly(bool val = true) {
+        _resourceSnapshotBodyOnly = val;
         return *this;
     }
 };

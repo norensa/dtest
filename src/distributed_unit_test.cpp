@@ -31,15 +31,15 @@ void DistributedUnitTest::_workerRun() {
 
             _status = Status::FAIL;
 
+            if (! _resourceSnapshotBodyOnly) sandbox().resourceSnapshot(_usedResources);
             timeOf(_onInit);
 
-            sandbox().resourceSnapshot(_usedResources);
-
+            if (_resourceSnapshotBodyOnly) sandbox().resourceSnapshot(_usedResources);
             _workerBodyTime = timeOf(_workerBody);
-
-            sandbox().resourceSnapshot(_usedResources);
+            if (_resourceSnapshotBodyOnly) sandbox().resourceSnapshot(_usedResources);
 
             timeOf(_onComplete);
+            if (! _resourceSnapshotBodyOnly) sandbox().resourceSnapshot(_usedResources);
 
             _status = Status::PASS;
         },

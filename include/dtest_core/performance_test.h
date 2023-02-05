@@ -157,6 +157,11 @@ public:
         UnitTest::input(input);
         return *this;
     }
+
+    inline PerformanceTest & resourceSnapshotBodyOnly(bool val = true) {
+        UnitTest::resourceSnapshotBodyOnly(val);
+        return *this;
+    }
 };
 
 }  // end namespace dtest

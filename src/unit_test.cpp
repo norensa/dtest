@@ -63,15 +63,15 @@ void UnitTest::_driverRun() {
 
             _status = Status::FAIL;
 
+            if (! _resourceSnapshotBodyOnly) sandbox().resourceSnapshot(_usedResources);
             _initTime = timeOf(_onInit);
 
-            sandbox().resourceSnapshot(_usedResources);
-
+            if (_resourceSnapshotBodyOnly) sandbox().resourceSnapshot(_usedResources);
             _bodyTime = timeOf(_body);
-
-            sandbox().resourceSnapshot(_usedResources);
+            if (_resourceSnapshotBodyOnly) sandbox().resourceSnapshot(_usedResources);
 
             _completeTime = timeOf(_onComplete);
+            if (! _resourceSnapshotBodyOnly) sandbox().resourceSnapshot(_usedResources);
 
             _status = Status::PASS;
         },

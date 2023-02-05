@@ -146,6 +146,11 @@ public:
         return *this;
     }
 
+    inline DistributedUnitTest & resourceSnapshotBodyOnly(bool val = true) {
+        UnitTest::resourceSnapshotBodyOnly(val);
+        return *this;
+    }
+
     inline DistributedUnitTest & workers(uint16_t numWorkers) {
         _numWorkers = numWorkers;
         return *this;

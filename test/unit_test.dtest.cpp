@@ -320,3 +320,25 @@ unit("unit-test", "memory-blocks-limit-fail")
     free(p1);
     free(p2);
 });
+
+unit("unit-test", "memory-leak-in-onInit-1")
+.expect(Status::PASS_WITH_MEMORY_LEAK)
+.onInit([] {
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wunused-result"
+    malloc(1);
+    #pragma GCC diagnostic pop
+})
+.body([] {
+});
+
+unit("unit-test", "memory-leak-in-onInit-2")
+.resourceSnapshotBodyOnly()
+.onInit([] {
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wunused-result"
+    malloc(1);
+    #pragma GCC diagnostic pop
+})
+.body([] {
+});
