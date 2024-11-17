@@ -33,11 +33,7 @@ struct TrackingException {
 
 static TrackingException allocEx[] = {
     { 0, "_dl_allocate_tls", (size_t) -1 },
-    { 2, "GOMP_parallel", 0x26 },
-    { 2, "GOMP_parallel", 0x2a },
-    { 2, "GOMP_parallel", 0x3a },
-    { 2, "GOMP_parallel", 0x3d },
-    { 2, "GOMP_parallel", 0x41 },
+    { 2, "GOMP_parallel", (size_t) -1 },
     { 1, "__tls_get_addr", 0x38 },
     { 1, "__tls_get_addr", 0x3c },
     { 0, "_IO_file_doallocate", (size_t) -1 },
