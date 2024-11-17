@@ -5,6 +5,7 @@
 
 #include <dtest_core/message.h>
 #include <dtest_core/sandbox.h>
+#include <stdexcept>
 
 using namespace dtest;
 
