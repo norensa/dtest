@@ -99,6 +99,7 @@ void Sandbox::_sandbox_stdio(const Buffer &in) {
     dup2(pipefd[0], 0);
     _sandboxed_stdio[0] = pipefd[1];
     writeFully(_sandboxed_stdio[0], in);
+    close(_sandboxed_stdio[0]);
 
     // stdout
     _saved_stdio[1] = dup(1);
@@ -116,7 +117,6 @@ void Sandbox::_sandbox_stdio(const Buffer &in) {
 void Sandbox::_unsandbox_stdio(Buffer &out, Buffer &err) {
     // stdin
     close(0);
-    close(_sandboxed_stdio[0]);
     dup2(_saved_stdio[0], 0);
     close(_saved_stdio[0]);
 
